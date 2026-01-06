@@ -2,476 +2,507 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Angel的健康秘書</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mounjaro 營養補充追蹤器</title>
     
-    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 引入 React 和 ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
-    <!-- 引入 Babel 用於解析 JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Google Fonts: Nunito & Custom Styles -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "lucide-react": "https://esm.sh/lucide-react@0.263.1"
+        }
+    }
+    </script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
-        
-        body {
-            background-color: #f8fafc; /* slate-50 */
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        .font-rounded {
-            font-family: 'Nunito', 'Hiragino Maru Gothic ProN', 'Rounded Mplus 1c', 'Microsoft JhengHei', sans-serif;
-        }
-
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        /* 動態進度條動畫 */
-        .progress-glow {
-            box-shadow: 0 0 10px rgba(20, 184, 166, 0.5);
-        }
-
-        /* 簡單的淡入動畫 */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out forwards;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f3f4f6; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .sticky-header { backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.9); }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, Fragment } = React;
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            Sun, Moon, Sunrise, Bed, CheckCircle, Circle, Info, Pill, 
+            Droplet, Coffee, Utensils, Calendar, ShieldAlert, Repeat, Plane, Trash2 
+        } from 'lucide-react';
 
-        // --- ICON COMPONENTS (SVG) ---
-        const IconBase = ({ children, className, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
-        );
+        // --- Data Definitions (Moved outside component for optimization) ---
+        
+        const scheduleDataTwoMeals = [
+            {
+                id: 'phase1',
+                title: '第一階段：起床空腹',
+                subtitle: '餐前 30 分鐘',
+                icon: Sunrise,
+                iconColor: 'text-orange-600',
+                color: 'bg-orange-100',
+                items: [
+                    { id: 'neocell', name: 'NeoCell Super Collagen', dose: '2 錠', desc: '皮膚與頭髮的地基', type: 'pill' },
+                    { id: 'nmn', name: 'bard NMN 30000', dose: '1 顆', desc: '喚醒細胞與體力', type: 'pill' }
+                ]
+            },
+            {
+                id: 'phase2',
+                title: '第二階段：第一餐 (早午餐)',
+                subtitle: '啟動代謝・提神・油類',
+                note: '胃口較好時攝取，適合吞嚥大顆膠囊',
+                icon: Sun,
+                iconColor: 'text-amber-600',
+                color: 'bg-amber-100',
+                subSections: [
+                    {
+                        title: '飯前先吃 (丸類/粉類)',
+                        items: [
+                            { id: 'profaes4', name: 'ProFaes4 益生菌', dose: '1 顆', desc: '隨餐第一口吃，助消化、減少脹氣', type: 'pill' },
+                            { id: 'bkomplex', name: 'Mivolis B-Komplex (B群)', dose: '1 顆', desc: '提供工作所需能量', type: 'pill' },
+                            { id: 'beauty', name: 'Mivolis 美容配方 (Haut...)', dose: '1 錠', desc: '含鋅與Q10，白天吸收好', type: 'pill' }
+                        ]
+                    },
+                    {
+                        title: '飯中或飯後吞 (油類)',
+                        items: [
+                            { id: 'seal_oil', name: 'BioSunn Selolje 海豹油', dose: '1 顆', desc: 'Mounjaro 防胃食道逆流：油類請在白天消化', type: 'oil' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'phase3',
+                title: '第三階段：第二餐 (晚餐)',
+                subtitle: '抗氧化・修復・避免油膩',
+                interPhaseAlert: '☕ 快樂下午茶－果果能量【紅韻歐蕾】(15:00 - 16:00)',
+                interPhaseNote: '建議沖泡 350cc - 400cc 的水及花 20-30 分鐘 慢慢喝完',
+                interPhaseColor: 'bg-orange-50 border-orange-200 text-orange-800',
+                icon: Utensils,
+                iconColor: 'text-sky-600',
+                color: 'bg-sky-100',
+                items: [
+                    { id: 'vitc', name: 'Mivolis Vitamin C', dose: '1 顆', desc: '緩釋型，延續夜間抗氧化修復', type: 'pill' },
+                    { id: 'blueberry', name: 'Nordmea Blåbær 藍莓', dose: '1 顆', desc: '舒緩整天用眼疲勞', type: 'pill' },
+                    { id: 'cartilage', name: 'BioSunn Haibrusk 軟骨', dose: '2 顆', desc: '含銅與軟骨素 (與早上的鋅錯開)', type: 'pill' }
+                ]
+            },
+            {
+                id: 'phase4',
+                title: '第四階段：睡前 (⏰３０－６０分鐘)',
+                subtitle: '解決便秘與睡眠問題',
+                interPhaseAlert: '💡 黃金時間：晚餐至睡前至少間隔 2 小時',
+                interPhaseColor: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                icon: Bed,
+                iconColor: 'text-indigo-600',
+                color: 'bg-indigo-100',
+                items: [
+                    { id: 'magnesium', name: 'Mivolis Magnesium 500 鎂', dose: '1 錠', desc: '關鍵！幫助排便與放鬆肌肉', type: 'pill' },
+                    { id: 'calcium', name: 'Mivolis Calcium 600 鈣', dose: '1 錠', desc: '補骨並穩定神經', type: 'pill' },
+                    { id: 'neocell_night', name: 'NeoCell Super Collagen', dose: '1 錠', desc: '分次吸收效果更佳', type: 'pill' }
+                ]
+            }
+        ];
 
-        const Sunrise = (p) => <IconBase {...p}><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></IconBase>;
-        const Sun = (p) => <IconBase {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></IconBase>;
-        const Utensils = (p) => <IconBase {...p}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></IconBase>;
-        const Bed = (p) => <IconBase {...p}><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></IconBase>;
-        const Coffee = (p) => <IconBase {...p}><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/></IconBase>;
-        const Plane = (p) => <IconBase {...p}><path d="M2 22h20"/><path d="M13 6h-3l-4 8h-2l3-10h7l5 14h-2.5l-3.5-12Z"/><path d="m15 17 2 5"/></IconBase>;
-        const Milk = (p) => <IconBase {...p}><path d="M8 2h8"/><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"/><path d="M7 15a6.472 6.472 0 0 1 5 0 6.47 6.47 0 0 0 5 0"/></IconBase>;
-        const Pill = (p) => <IconBase {...p}><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></IconBase>;
-        const Info = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></IconBase>;
-        const CheckCircle = (p) => <IconBase {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></IconBase>;
-        const Circle = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/></IconBase>;
-        const Repeat = (p) => <IconBase {...p}><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></IconBase>;
-        const Briefcase = (p) => <IconBase {...p}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></IconBase>;
-        const ListTodo = (p) => <IconBase {...p}><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></IconBase>;
-        const Clock = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>;
-        const Activity = (p) => <IconBase {...p}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></IconBase>;
-        const AlertTriangle = (p) => <IconBase {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></IconBase>;
-        const Ban = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></IconBase>;
-        const Calendar = (p) => <IconBase {...p}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></IconBase>;
-        const Cookie = (p) => <IconBase {...p}><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 15.5v.01"/><path d="M12 12v.01"/><path d="M11 17v.01"/><path d="M7 14v.01"/></IconBase>;
-        const Droplet = (p) => <IconBase {...p}><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.74A17.16 17.16 0 0 0 12 2v0a17.16 17.16 0 0 0-7 7.26C3 11.1 2 13 2 15a7 7 0 0 0 10 7Z"/></IconBase>;
-        const ShieldAlert = (p) => <IconBase {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="M12 8v4"/><path d="M12 16h.01"/></IconBase>;
-
-        // --- MAIN APP ---
-        const SupplementApp = () => {
-            const [activeTab, setActiveTab] = useState('two-meals');
-            const [threeMealMode, setThreeMealMode] = useState('standard'); 
-            const [tourSubTab, setTourSubTab] = useState('schedule'); 
-            const [packingDuration, setPackingDuration] = useState('13'); 
-            const [checkedItems, setCheckedItems] = useState({});
-            const [packedItems, setPackedItems] = useState({}); 
-            const [progress, setProgress] = useState(0);
-            const [showResetModal, setShowResetModal] = useState(false);
-            const [showPackingResetModal, setShowPackingResetModal] = useState(false);
-
-            // Data Definitions
-            const packingConfig = {
-                '13': { label: '13天團 (11份)', multiplier: 11, mct: 10 },
-                '11': { label: '11天團 (9份)', multiplier: 9, mct: 4 },
-                '10': { label: '10天團 (8份)', multiplier: 8, mct: 2 },
-            };
-
-            const packingListItems = [
-                { id: 'p_neocell', name: '1. NeoCell Super Collagen', baseDose: 3, unit: '錠' },
-                { id: 'p_nmn', name: '2. bard NMN 30000', baseDose: 1, unit: '顆' },
-                { id: 'p_profaes', name: '3. ProFaes4 益生菌', baseDose: 1, unit: '顆' },
-                { id: 'p_bkomplex', name: '4. Mivolis B-Komplex (B群)', baseDose: 1, unit: '顆' },
-                { id: 'p_ampk', name: '5. Life Extension AMPK', baseDose: 1, unit: '錠' },
-                { id: 'p_vitc', name: '6. Mivolis Vitamin C', baseDose: 1, unit: '顆' },
-                { id: 'p_beauty', name: '7. Mivolis 美容配方 (Haut...)', baseDose: 1, unit: '錠' },
-                { id: 'p_seal', name: '8. BioSunn Selolje (海豹油)', baseDose: 1, unit: '顆' },
-                { id: 'p_blueberry', name: '9. Nordmea Blåbær (藍莓)', baseDose: 1, unit: '顆' },
-                { id: 'p_cartilage', name: '10. BioSunn Haibrusk (軟骨)', baseDose: 2, unit: '顆' },
-                { id: 'p_magnesium', name: '11. Mivolis Magnesium 500 (鎂)', baseDose: 1, unit: '錠' },
-                { id: 'p_calcium', name: '12. Mivolis Calcium 600 (鈣)', baseDose: 1, unit: '錠' },
-            ];
-
-            const scheduleDataTwoMeals = [
+        const getScheduleThreeMeals = (mode) => {
+            const isGapMode = mode === 'gap';
+            
+            return [
                 {
-                    id: 'phase1', title: '第一階段：起床空腹', subtitle: '餐前 30 分鐘',
-                    icon: <Sunrise className="w-7 h-7 text-orange-600" />, color: 'bg-orange-100', 
+                    id: 'tm_phase1',
+                    title: '1. 起床空腹 (早餐前 30 分鐘)',
+                    subtitle: '防皮鬆關鍵・吸收最佳',
+                    icon: Sunrise,
+                    iconColor: 'text-orange-600',
+                    color: 'bg-orange-100',
                     items: [
-                        { id: 'neocell', name: 'NeoCell Super Collagen', dose: '2 錠', desc: '皮膚與頭髮的地基', type: 'pill' },
-                        { id: 'nmn', name: 'bard NMN 30000', dose: '1 顆', desc: '喚醒細胞與體力', type: 'pill' }
+                        { id: 'tm_neocell', name: 'NeoCell Super Collagen', dose: '2 錠', desc: '防皮鬆最關鍵，空腹吸收最佳', type: 'pill' },
+                        { id: 'tm_nmn', name: 'bard NMN 30000', dose: '1 顆', desc: '喚醒細胞，補充體力', type: 'pill' }
                     ]
                 },
                 {
-                    id: 'phase2', title: '第二階段：第一餐 (早午餐)', subtitle: '啟動代謝・提神・油類',
-                    icon: <Sun className="w-7 h-7 text-amber-600" />, color: 'bg-amber-100',
-                    subSections: [
-                        {
-                            title: '飯前先吃 (丸類/粉類)',
-                            items: [
-                                { id: 'profaes4', name: 'ProFaes4 益生菌', dose: '1 顆', desc: '隨餐助消化、減少脹氣', type: 'pill' },
-                                { id: 'bkomplex', name: 'Mivolis B-Komplex (B群)', dose: '1 顆', desc: '提供工作所需能量', type: 'pill' },
-                                { id: 'beauty', name: 'Mivolis 美容配方 (Haut...)', dose: '1 錠', desc: '含鋅與Q10，白天吸收好', type: 'pill' }
-                            ]
-                        },
-                        {
-                            title: '飯中或飯後吞 (油類)',
-                            items: [
-                                { id: 'seal_oil', name: 'BioSunn Selolje 海豹油', dose: '1 顆', desc: '油類請在白天消化，防逆流', type: 'oil' }
-                            ]
-                        }
+                    id: 'tm_phase2',
+                    title: '2. 早餐 (啟動代謝)',
+                    subtitle: isGapMode ? '空窗期重點：增加飽足感' : '預防脹氣・維持代謝',
+                    icon: Coffee,
+                    iconColor: 'text-amber-600',
+                    color: 'bg-amber-100',
+                    items: [
+                        { id: 'tm_profaes4', name: 'ProFaes4 益生菌', dose: '1 顆', desc: '隨餐第一口吃，預防整天的脹氣與便秘', type: 'pill' },
+                        { id: 'tm_bkomplex', name: 'Mivolis B-Komplex (B群)', dose: '1 顆', desc: '提神、維持基礎代謝，白天吃避免失眠', type: 'pill' },
+                        { id: 'tm_ampk', name: 'Life Extension AMPK', dose: '1 錠', desc: '燃燒腹部脂肪，配合藥物效果佳', type: 'pill' },
+                        ...(isGapMode ? [{ 
+                            id: 'tm_mct', 
+                            name: "Nature's Truth MCT Oil", 
+                            dose: '1 顆', 
+                            desc: '★ 空窗期加強：增加飽足感，撐過早上飢餓感', 
+                            type: 'oil',
+                            highlight: true 
+                        }] : [])
                     ]
                 },
                 {
-                    id: 'phase3', title: '第三階段：第二餐 (晚餐)', subtitle: '抗氧化・修復・避免油膩',
-                    prePhaseEvents: [
-                        { title: '快樂下午茶－果果能量【乳清蛋白飲】', note: '午餐後2小時 / 慢慢喝 20-30 分鐘', icon: <Coffee className="w-5 h-5 text-orange-600" />, colorTheme: 'orange' },
-                        { title: '飢餓法寶－果果能量【蛋白威化酥】', note: '晚餐前1.5小時 / 搭配 300cc 水', icon: <Cookie className="w-5 h-5 text-orange-900" />, colorTheme: 'chestnut' }
-                    ],
-                    icon: <Utensils className="w-7 h-7 text-sky-600" />, color: 'bg-sky-100',
+                    id: 'tm_phase3',
+                    title: '3. 午餐 (油脂消化+養顏)',
+                    subtitle: '護胃・護眼',
+                    icon: Sun,
+                    iconColor: 'text-yellow-600',
+                    color: 'bg-yellow-100',
                     items: [
-                        { id: 'vitc', name: 'Mivolis Vitamin C', dose: '1 顆', desc: '緩釋型，夜間抗氧化修復', type: 'pill' },
-                        { id: 'blueberry', name: 'Nordmea Blåbær 藍莓', dose: '1 顆', desc: '舒緩整天用眼疲勞', type: 'pill' },
-                        { id: 'cartilage', name: 'BioSunn Haibrusk 軟骨', dose: '2 顆', desc: '夜間修復關節軟骨', type: 'pill' }
+                        { id: 'tm_beauty', name: 'Mivolis 美容配方 (Haut+)', dose: '1 錠', desc: '含鋅、Q10，隨餐吃護胃不噁心', type: 'pill' },
+                        { id: 'tm_seal', name: 'BioSunn Selolje (海豹油)', dose: '1 顆', desc: '油類午餐消化最好，避免夜間胃食道逆流', type: 'oil' },
+                        { id: 'tm_blueberry', name: 'Nordmea Blåbær (藍莓)', dose: '1 顆', desc: '護眼、抗氧化', type: 'pill' },
+                        ...(isGapMode ? [{ 
+                            id: 'tm_mct_lunch', 
+                            name: "Nature's Truth MCT Oil", 
+                            dose: '1 顆', 
+                            desc: '★ 空窗期加強：延續飽足感至下午', 
+                            type: 'oil',
+                            highlight: true 
+                        }] : [])
                     ]
                 },
                 {
-                    id: 'phase4', title: '第四階段：睡前 (⏰30-60分鐘)', subtitle: '解決便秘與睡眠問題',
-                    prePhaseEvents: [{ title: '💡 黃金時間：晚餐至睡前至少間隔 2 小時', colorTheme: 'amber' }],
-                    icon: <Bed className="w-7 h-7 text-indigo-600" />, color: 'bg-indigo-100',
+                    id: 'tm_phase4',
+                    title: '4. 晚餐 (修復+抗氧化)',
+                    subtitle: '夜間修復・關節保養',
+                    interPhaseAlert: '☕ 快樂下午茶－果果能量【紅韻歐蕾】(15:00 - 16:00)',
+                    interPhaseNote: '建議沖泡 350cc - 400cc 的水及花 20-30 分鐘 慢慢喝完',
+                    interPhaseColor: 'bg-orange-50 border-orange-200 text-orange-800',
+                    icon: Utensils,
+                    iconColor: 'text-sky-600',
+                    color: 'bg-sky-100',
+                    note: isGapMode ? '⚠️ 空窗期調整：晚餐澱粉請減半，避免脂肪堆積' : null,
+                    noteType: isGapMode ? 'warning' : null,
                     items: [
-                        { id: 'magnesium', name: 'Mivolis Magnesium 500 鎂', dose: '1 錠', desc: '關鍵！幫助排便與放鬆肌肉', type: 'pill' },
-                        { id: 'calcium', name: 'Mivolis Calcium 600 鈣', dose: '1 錠', desc: '補骨並穩定神經', type: 'pill' },
-                        { id: 'neocell_night', name: 'NeoCell Super Collagen', dose: '1 錠', desc: '分次吸收效果更佳', type: 'pill' }
+                        { id: 'tm_vitc', name: 'Mivolis Vitamin C', dose: '1 顆', desc: '幫助軟骨與膠原蛋白合成，夜間抗氧化', type: 'pill' },
+                        { id: 'tm_cartilage', name: 'BioSunn Haibrusk (鯊魚軟骨)', dose: '2 顆', desc: '夜間修復關節軟骨，預防運動損傷', type: 'pill' }
+                    ]
+                },
+                {
+                    id: 'tm_phase5',
+                    title: '5. 睡前 (⏰３０－６０分鐘)',
+                    subtitle: '解決便秘・放鬆助眠',
+                    interPhaseAlert: '💡 黃金時間：晚餐至睡前至少間隔 2 小時',
+                    interPhaseColor: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                    icon: Bed,
+                    iconColor: 'text-indigo-600',
+                    color: 'bg-indigo-100',
+                    items: [
+                        { id: 'tm_magnesium', name: 'Mivolis Magnesium 500 (鎂)', dose: '1 錠', desc: '關鍵！解決便秘、放鬆肌肉、助眠', type: 'pill' },
+                        { id: 'tm_calcium', name: 'Mivolis Calcium 600 (鈣)', dose: '1 錠', desc: '補鈣，與鎂一起穩定神經', type: 'pill' },
+                        { id: 'tm_neocell_night', name: 'NeoCell Super Collagen', dose: '1 錠', desc: '分次吸收，夜間修復', type: 'pill' }
                     ]
                 }
             ];
+        };
 
-            const getScheduleThreeMeals = (mode) => {
-                const isGap = mode === 'gap';
-                return [
-                    { id: 't1', title: '1. 起床空腹', subtitle: '防皮鬆關鍵', icon: <Sunrise className="w-7 h-7 text-orange-600" />, color: 'bg-orange-100',
-                      items: [{ id: 'tm_neocell', name: 'NeoCell Super Collagen', dose: '2 錠', desc: '空腹吸收最佳', type: 'pill' }] },
-                    { id: 't2', title: '2. 早餐', subtitle: '預防脹氣', icon: <Coffee className="w-7 h-7 text-amber-600" />, color: 'bg-amber-100',
-                      items: [
-                          { id: 'tm_profaes', name: 'ProFaes4 益生菌', dose: '1 顆', desc: '預防整天脹氣', type: 'pill' },
-                          isGap ? { id: 'tm_mct1', name: "Nature's Truth MCT Oil", dose: '1 顆', desc: '★ 空窗期：增加飽足感', type: 'oil', highlight: true } : null
-                      ].filter(Boolean) },
-                    { id: 't3', title: '3. 午餐', subtitle: '油脂消化', icon: <Sun className="w-7 h-7 text-yellow-600" />, color: 'bg-yellow-100',
-                      items: [
-                          { id: 'tm_seal', name: 'BioSunn Selolje (海豹油)', dose: '1 顆', desc: '中午消化最好', type: 'oil' },
-                          isGap ? { id: 'tm_mct2', name: "Nature's Truth MCT Oil", dose: '1 顆', desc: '★ 延續飽足感', type: 'oil', highlight: true } : null
-                      ].filter(Boolean) }
-                ];
+        const alternativesData = [
+            {
+                category: '睡眠與排便',
+                icon: Bed,
+                iconColor: 'text-indigo-600',
+                color: 'bg-indigo-50',
+                primary: 'Mivolis Magnesium 500 (鎂)',
+                alt: 'Natrol 5-HTP',
+                note: '鎂能解便秘+助眠。若鎂吃完，改吃 5-HTP 維持睡眠。'
+            },
+            {
+                category: '能量與代謝',
+                icon: Coffee,
+                iconColor: 'text-amber-600',
+                color: 'bg-amber-50',
+                primary: 'Mivolis B-Komplex (B群)',
+                alt: "Nature's Truth MCT Oil",
+                note: (<span>打針期間 B 群優先。MCT 油易腹瀉，建議僅在 <strong className="text-orange-600">延後打針 (第 8-11 天)</strong> 時補充飽足感。</span>)
+            },
+            {
+                category: '免疫與鋅',
+                icon: ShieldAlert,
+                iconColor: 'text-rose-600',
+                color: 'bg-rose-50',
+                primary: 'Mivolis 美容配方 (Haut+)',
+                alt: 'Mivolis Zink (單方鋅)',
+                note: '美容配方含鋅不傷胃。單方鋅僅建議感冒時短期補充。'
+            },
+            {
+                category: '油脂/女性',
+                icon: Droplet,
+                iconColor: 'text-sky-600',
+                color: 'bg-sky-50',
+                primary: 'BioSunn 海豹油',
+                alt: '亞尼活力 琉璃苣油',
+                note: '海豹油代謝佳。琉璃苣油若造成打嗝有油味可暫停。'
+            }
+        ];
+
+        // --- Main Component ---
+
+        const SupplementApp = () => {
+            const [activeTab, setActiveTab] = useState('two-meals');
+            const [threeMealMode, setThreeMealMode] = useState('standard'); 
+            const [checkedItems, setCheckedItems] = useState({});
+            const [progress, setProgress] = useState(0);
+
+            // Logic to get current data
+            const getCurrentScheduleData = () => {
+                if (activeTab === 'two-meals') return scheduleDataTwoMeals;
+                if (activeTab === 'three-meals') return getScheduleThreeMeals(threeMealMode);
+                return [];
             };
 
-            const alternativesData = [
-                { category: '睡眠與排便', icon: <Bed className="w-6 h-6 text-indigo-600" />, color: 'bg-indigo-50', primary: 'Mivolis Magnesium 500 (鎂)', alt: 'Natrol 5-HTP', note: '鎂能解便秘+助眠。' },
-                { category: '能量與代謝', icon: <Coffee className="w-6 h-6 text-amber-600" />, color: 'bg-amber-50', primary: 'Mivolis B-Komplex (B群)', alt: "Nature's Truth MCT Oil", note: '打針期間 B 群優先。' }
-            ];
+            const currentSchedule = getCurrentScheduleData();
 
-            const getEventStyles = (theme) => {
-                const map = {
-                    orange: { line: 'bg-orange-200/50', cap: 'bg-orange-50 border-orange-100 text-orange-700', note: 'text-orange-600' },
-                    chestnut: { line: 'bg-orange-300/50', cap: 'bg-orange-100 border-orange-200 text-orange-900', note: 'text-orange-800' },
-                    amber: { line: 'bg-amber-200/50', cap: 'bg-amber-50 border-amber-100 text-amber-700', note: 'text-amber-600' }
-                };
-                return map[theme] || map.amber;
+            // Progress Calculation
+            const calculateTotalItems = () => {
+                let count = 0;
+                currentSchedule.forEach(phase => {
+                    if (phase.items) count += phase.items.length;
+                    if (phase.subSections) {
+                        phase.subSections.forEach(sub => count += sub.items.length);
+                    }
+                });
+                return count;
             };
 
+            const totalItems = calculateTotalItems();
+
+            // Load State
             useEffect(() => {
-                const savedChecks = localStorage.getItem('angel_checks');
-                const savedPacked = localStorage.getItem('angel_packed');
+                const savedChecks = localStorage.getItem('mounjaro_daily_checks');
+                const savedDate = localStorage.getItem('mounjaro_check_date');
                 const today = new Date().toDateString();
-                const savedDate = localStorage.getItem('angel_date');
-                if (savedChecks && savedDate === today) setCheckedItems(JSON.parse(savedChecks));
-                else { setCheckedItems({}); localStorage.setItem('angel_date', today); }
-                if (savedPacked) setPackedItems(JSON.parse(savedPacked));
+
+                if (savedChecks && savedDate === today) {
+                    setCheckedItems(JSON.parse(savedChecks));
+                } else {
+                    setCheckedItems({});
+                    localStorage.setItem('mounjaro_check_date', today);
+                }
             }, []);
 
+            // Update Progress
             useEffect(() => {
-                localStorage.setItem('angel_checks', JSON.stringify(checkedItems));
-                localStorage.setItem('angel_packed', JSON.stringify(packedItems));
+                const currentIds = new Set();
+                currentSchedule.forEach(phase => {
+                    if (phase.items) phase.items.forEach(i => currentIds.add(i.id));
+                    if (phase.subSections) phase.subSections.forEach(sub => sub.items.forEach(i => currentIds.add(i.id)));
+                });
+
+                const checkedCount = Object.keys(checkedItems).filter(id => checkedItems[id] && currentIds.has(id)).length;
+                const percentage = totalItems > 0 ? Math.round((checkedCount / totalItems) * 100) : 0;
                 
-                // 簡單計算進度，分母暫定為 10
-                const checked = Object.values(checkedItems).filter(Boolean).length;
-                setProgress(Math.min(100, Math.round((checked / 10) * 100)));
-            }, [checkedItems, packedItems]);
+                setProgress(percentage);
+                localStorage.setItem('mounjaro_daily_checks', JSON.stringify(checkedItems));
+            }, [checkedItems, totalItems, activeTab, threeMealMode]);
 
-            const confirmReset = () => { setCheckedItems({}); setProgress(0); setShowResetModal(false); };
-            const confirmPackingReset = () => { setPackedItems({}); setShowPackingResetModal(false); };
-            
-            // 補上缺失的 Handlers
-            const handleResetClick = () => setShowResetModal(true);
-            const handlePackingResetClick = () => setShowPackingResetModal(true);
+            const toggleCheck = (id) => {
+                setCheckedItems(prev => ({
+                    ...prev,
+                    [id]: !prev[id]
+                }));
+            };
 
-            const SupplementCard = ({ item }) => {
-                const isChecked = checkedItems[item.id];
+            const resetDaily = () => {
+                if (window.confirm('確定要重置今日的所有紀錄嗎？')) {
+                    setCheckedItems({});
+                    window.scrollTo(0,0);
+                }
+            };
+
+            // Render Helper: List Item
+            const renderItem = (item) => {
+                const isChecked = checkedItems[item.id] || false;
                 return (
-                    <div onClick={() => setCheckedItems(p => ({...p, [item.id]: !p[item.id]}))}
-                          className={`relative p-3 mb-2 rounded-3xl border transition-all cursor-pointer flex items-start gap-3 
-                          ${isChecked ? 'bg-teal-50/80 border-teal-200/60' : item.highlight ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100 shadow-sm'}`}>
-                        <div className="mt-1">{isChecked ? <CheckCircle className="w-6 h-6 fill-teal-500 text-white" /> : <Circle className="w-6 h-6 text-slate-300" />}</div>
-                        <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                                <h3 className={`font-bold text-xl leading-tight ${isChecked ? 'text-teal-800 opacity-60 line-through' : 'text-slate-700'}`}>{item.name}</h3>
-                                <span className="font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-sm">{item.dose}</span>
+                    <div 
+                        key={item.id} 
+                        onClick={() => toggleCheck(item.id)}
+                        className={`
+                            flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer mb-2
+                            ${isChecked ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100 hover:border-blue-200'}
+                            ${item.highlight ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}
+                        `}
+                    >
+                        <div className="flex items-start gap-3 flex-1">
+                            <div className={`mt-0.5 ${isChecked ? 'text-green-500' : 'text-gray-300'}`}>
+                                {isChecked ? <CheckCircle className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
                             </div>
-                            <p className={`font-medium mt-0.5 text-base ${isChecked ? 'text-teal-700 opacity-60' : 'text-slate-500'}`}>{item.desc}</p>
+                            <div>
+                                <h4 className={`font-semibold text-lg ${isChecked ? 'text-green-800 line-through decoration-green-300' : 'text-gray-800'}`}>
+                                    {item.name}
+                                </h4>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                        item.type === 'pill' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
+                                    }`}>
+                                        {item.dose}
+                                    </span>
+                                    <p className="text-sm text-gray-500">{item.desc}</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 );
             };
 
             return (
-                <div className="min-h-screen bg-slate-50 text-slate-800 font-rounded pb-24 relative">
-                    {/* Header */}
-                    <div className="bg-white sticky top-0 z-40 shadow-sm border-b border-slate-100 backdrop-blur-md bg-white/95">
-                        <div className="max-w-md mx-auto px-5 py-4">
-                            <div className="flex justify-between items-end mb-3">
-                                <div>
-                                    <h1 className="text-2xl font-extrabold text-slate-800 tracking-wide">Angel <span className="font-medium text-xl text-slate-600">的健康秘書</span></h1>
-                                    <p className="text-[10px] font-bold text-slate-400 mt-1 tracking-[0.2em] uppercase">{new Date().toLocaleDateString('zh-TW', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-3xl font-black text-teal-500 leading-none">{progress}%</div>
-                                    <div className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.15em] mt-1">Goal</div>
-                                </div>
+                <div className="min-h-screen pb-20">
+                    {/* Sticky Header */}
+                    <div className="sticky-header sticky top-0 z-50 border-b border-gray-200 shadow-sm">
+                        <div className="max-w-md mx-auto px-4 py-3">
+                            <div className="flex justify-between items-center mb-2">
+                                <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-indigo-600" />
+                                    今日補充進度
+                                </h1>
+                                <span className="text-sm font-bold text-indigo-600">{progress}%</span>
                             </div>
-                            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                                <div className="h-full bg-gradient-to-r from-teal-300 to-teal-500 progress-glow transition-all duration-700" style={{ width: `${progress}%` }} />
-                            </div>
-                        </div>
-
-                        {/* Tabs */}
-                        <div className="px-5 pb-4 pt-1">
-                            <div className="grid grid-cols-4 gap-1 p-1.5 bg-slate-100/80 rounded-3xl w-full">
-                                {['two-meals', 'three-meals', 'protein', 'alternatives'].map(tab => (
-                                    <button key={tab} onClick={() => setActiveTab(tab)}
-                                            className={`py-2 text-xs sm:text-sm font-bold rounded-2xl transition-all flex flex-col items-center justify-center px-1
-                                            ${activeTab === tab ? 'bg-white text-teal-600 shadow-sm ring-1 ring-black/5 scale-[1.02]' : 'text-slate-400'}`}>
-                                            {tab === 'two-meals' && <Coffee className="w-4 h-4 mb-1" />}
-                                            {tab === 'three-meals' && <Plane className="w-4 h-4 mb-1" />}
-                                            {tab === 'protein' && <Milk className="w-4 h-4 mb-1" />}
-                                            {tab === 'alternatives' && <Pill className="w-4 h-4 mb-1" />}
-                                            <span className="text-center leading-tight">
-                                                {tab === 'two-meals' && '一日兩餐'}
-                                                {tab === 'three-meals' && '出團版'}
-                                                {tab === 'protein' && '高蛋白'}
-                                                {tab === 'alternatives' && '替代方案'}
-                                            </span>
-                                    </button>
-                                ))}
+                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                <div 
+                                    className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out" 
+                                    style={{ width: `${progress}%` }}
+                                ></div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="max-w-md mx-auto p-5 space-y-6">
-                        {/* Tab Contents */}
-                        {activeTab === 'two-meals' && (
-                            <div className="animate-fade-in">
-                                <div className="bg-gradient-to-br from-teal-50 to-white border border-teal-100/50 rounded-3xl p-5 flex gap-3 shadow-sm mb-6">
-                                    <Info className="w-6 h-6 text-teal-600 shrink-0" />
-                                    <div className="text-sm text-teal-700/80 font-medium">
-                                        <strong className="text-teal-800 text-base block mb-1">Mounjaro 提示</strong>
-                                        油類請在白天攝取，睡前鎂有助於排便。
-                                    </div>
-                                </div>
-                                {scheduleDataTwoMeals.map(phase => (
-                                    <div key={phase.id} className="mb-6">
-                                        {phase.prePhaseEvents && phase.prePhaseEvents.map((ev, i) => {
-                                            const s = getEventStyles(ev.colorTheme);
-                                            return (
-                                                <div key={i} className="flex items-center gap-3 my-4">
-                                                    <div className={`h-px flex-1 ${s.line}`} />
-                                                    <div className={`px-4 py-2 rounded-3xl border shadow-sm flex flex-col items-center ${s.cap}`}>
-                                                        <div className="flex items-center gap-1.5 font-bold text-base">{ev.icon} {ev.title}</div>
-                                                        <span className={`text-sm font-medium ${s.note}`}>{ev.note}</span>
-                                                    </div>
-                                                    <div className={`h-px flex-1 ${s.line}`} />
-                                                </div>
-                                            );
-                                        })}
-                                        <div className="flex items-center gap-3 mb-3"><div className={`p-2.5 rounded-2xl ${phase.color}`}>{phase.icon}</div>
-                                            <div><h2 className="font-bold text-xl text-slate-700">{phase.title}</h2><p className="text-sm text-slate-500">{phase.subtitle}</p></div>
-                                        </div>
-                                        {phase.items && phase.items.map(item => <SupplementCard key={item.id} item={item} />)}
-                                        {phase.subSections && phase.subSections.map((sub, i) => (
-                                            <div key={i} className="mt-4 pl-4 border-l-2 border-slate-100 ml-3">
-                                                <h3 className="text-sm font-bold text-slate-400 mb-2 uppercase">{sub.title}</h3>
-                                                {sub.items.map(it => <SupplementCard key={it.id} item={it} />)}
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
-                                <button onClick={handleResetClick} className="w-full py-4 text-slate-400 font-medium hover:text-rose-500 flex items-center justify-center gap-2 rounded-3xl"><Repeat className="w-4 h-4" /> 重置今日紀錄</button>
-                            </div>
-                        )}
+                    <div className="max-w-md mx-auto px-4 py-4 space-y-6">
+                        
+                        {/* Tab Switcher */}
+                        <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex">
+                            <button 
+                                onClick={() => setActiveTab('two-meals')}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                    activeTab === 'two-meals' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                一日兩餐
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('three-meals')}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                    activeTab === 'three-meals' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                一日三餐
+                            </button>
+                        </div>
 
+                        {/* Three Meal Mode Toggle */}
                         {activeTab === 'three-meals' && (
-                            <div className="animate-fade-in">
-                                <div className="flex gap-4 mb-6 justify-center">
-                                    <button onClick={() => setTourSubTab('schedule')} className={`px-5 py-2 rounded-full text-sm font-bold border-2 ${tourSubTab === 'schedule' ? 'bg-teal-500 text-white border-teal-500 shadow-md' : 'bg-white text-slate-400 border-slate-200'}`}>每日行程</button>
-                                    <button onClick={() => setTourSubTab('packing')} className={`px-5 py-2 rounded-full text-sm font-bold border-2 flex items-center gap-2 ${tourSubTab === 'packing' ? 'bg-teal-500 text-white border-teal-500 shadow-md' : 'bg-white text-slate-400 border-slate-200'}`}><Briefcase className="w-4 h-4" />行李打包</button>
+                            <div className="flex items-center justify-between bg-amber-50 p-3 rounded-lg border border-amber-100">
+                                <div className="flex items-center gap-2">
+                                    <Info className="w-5 h-5 text-amber-600" />
+                                    <span className="text-sm font-medium text-amber-800">目前模式：{threeMealMode === 'standard' ? '標準 (第1-7天)' : '空窗期 (第8天後)'}</span>
                                 </div>
-                                {tourSubTab === 'packing' ? (
-                                    <div className="space-y-4">
-                                        <div className="flex gap-2 p-1.5 bg-slate-200/50 rounded-2xl border border-slate-100">
-                                            {['13', '11', '10'].map(d => <button key={d} onClick={() => setPackingDuration(d)} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${packingDuration === d ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500'}`}>{packingConfig[d].label}</button>)}
-                                        </div>
-                                        {packingListItems.map(it => (
-                                            <div key={it.id} onClick={() => setPackedItems(p => ({...p, [it.id]: !p[it.id]}))} className={`flex justify-between p-4 rounded-2xl border transition-all cursor-pointer ${packedItems[it.id] ? 'bg-teal-50/50 border-teal-200' : 'bg-white border-slate-100 shadow-sm'}`}>
-                                                <div className="flex items-center gap-3">{packedItems[it.id] ? <CheckCircle className="w-5 h-5 fill-teal-500 text-white" /> : <Circle className="w-5 h-5 text-slate-300" />}<span className={`font-bold text-base ${packedItems[it.id] ? 'line-through opacity-60' : ''}`}>{it.name}</span></div>
-                                                <span className="text-base font-black px-3 py-1 rounded-xl bg-slate-100">{it.baseDose * packingConfig[packingDuration].multiplier} {it.unit}</span>
-                                            </div>
-                                        ))}
-                                        <div className="mt-6 pt-4 border-t border-slate-100">
-                                            <div className="text-amber-600 font-bold text-sm mb-3">13. Nature's Truth MCT Oil</div>
-                                            <div onClick={() => setPackedItems(p => ({...p, p_mct: !p.p_mct}))} className={`flex justify-between p-4 rounded-2xl border transition-all cursor-pointer ${packedItems.p_mct ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100 shadow-sm'}`}>
-                                                <div className="flex items-center gap-3">{packedItems.p_mct ? <CheckCircle className="w-5 h-5 fill-amber-500 text-white" /> : <Circle className="w-5 h-5 text-slate-300" />}<span className={`font-bold text-base ${packedItems.p_mct ? 'line-through opacity-60' : ''}`}>MCT Oil</span></div>
-                                                <span className="text-base font-black px-3 py-1 rounded-xl bg-amber-100">{packingConfig[packingDuration].mct} 顆</span>
-                                            </div>
-                                        </div>
-                                        <button onClick={handlePackingResetClick} className="w-full py-4 text-slate-400 font-medium hover:text-rose-500 flex items-center justify-center gap-2 rounded-3xl"><Repeat className="w-4 h-4" /> 重置打包清單</button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-6">
-                                        <div className="flex p-1.5 bg-slate-200/50 rounded-3xl border border-slate-100">
-                                            <button onClick={() => setThreeMealMode('standard')} className={`flex-1 py-3 text-xs font-bold rounded-2xl transition-all ${threeMealMode === 'standard' ? 'bg-white text-teal-600' : 'text-slate-500'}`}>平日模式</button>
-                                            <button onClick={() => setThreeMealMode('gap')} className={`flex-1 py-3 text-xs font-bold rounded-2xl transition-all ${threeMealMode === 'gap' ? 'bg-orange-50 text-orange-600 shadow-sm' : 'text-slate-500'}`}>空窗期</button>
-                                        </div>
-                                        {getScheduleThreeMeals(threeMealMode).map(p => (
-                                            <div key={p.id} className="mb-6">
-                                                <div className="flex items-center gap-3 mb-3"><div className={`p-2.5 rounded-2xl ${p.color}`}>{p.icon}</div><div><h2 className="font-bold text-xl">{p.title}</h2><p className="text-sm text-slate-500">{p.subtitle}</p></div></div>
-                                                {p.items.map(it => <SupplementCard key={it.id} item={it} />)}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        className="sr-only peer"
+                                        checked={threeMealMode === 'gap'}
+                                        onChange={() => setThreeMealMode(prev => prev === 'standard' ? 'gap' : 'standard')}
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                                </label>
                             </div>
                         )}
 
-                        {activeTab === 'protein' && (
-                            <div className="animate-fade-in space-y-6">
-                                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                                    <div className="flex items-start gap-4 mb-5 pb-4 border-b border-amber-100">
-                                        <div className="p-3 bg-amber-100 rounded-2xl"><Coffee className="w-7 h-7 text-amber-900" /></div>
-                                        <div><h3 className="text-xl font-bold text-slate-800">果果能量－乳清蛋白</h3><div className="mt-2 text-base text-amber-900 bg-amber-100 px-3 py-1 rounded-xl font-bold flex items-center gap-2"><Clock className="w-4 h-4" />午餐後 2 小時</div></div>
-                                    </div>
-                                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 space-y-2">
-                                        <h4 className="font-bold text-amber-700 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> 重點叮嚀</h4>
-                                        <p className="text-sm text-amber-900/80 leading-relaxed">請花 20-30 分鐘慢慢喝完，一口氣灌下容易想吐。泡 350-400cc 水量加倍順便補水。</p>
-                                    </div>
-                                </div>
-                                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                                    <div className="flex items-start gap-4 mb-5 pb-4 border-b border-amber-100">
-                                        <div className="p-3 bg-amber-100 rounded-2xl"><Cookie className="w-7 h-7 text-amber-900" /></div>
-                                        <div><h3 className="text-xl font-bold text-slate-800">果果能量－蛋白威化餅</h3><div className="mt-2 text-base text-amber-900 bg-amber-100 px-3 py-1 rounded-xl font-bold flex items-center gap-2"><Clock className="w-4 h-4" />晚餐前 1.5 小時</div></div>
-                                    </div>
-                                    <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
-                                        <h4 className="font-bold text-rose-700 mb-2 flex items-center gap-2"><Ban className="w-4 h-4" />請勿食用時間</h4>
-                                        <p className="text-sm text-rose-900/80">睡前不要吃，MCT 油容易導致火燒心。正餐當下不要吃，蛋白質不足且會影響正餐胃口。</p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'alternatives' && (
-                            <div className="animate-fade-in space-y-4">
-                                {alternativesData.map((alt, i) => (
-                                    <div key={i} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                                        <div className="flex items-center gap-4 mb-4">
-                                            <div className={`p-3 rounded-2xl ${alt.color}`}>{alt.icon}</div>
-                                            <h3 className="font-bold text-lg text-slate-700">{alt.category}</h3>
+                        {/* Schedule Rendering */}
+                        <div className="space-y-6">
+                            {currentSchedule.map((phase) => (
+                                <div key={phase.id}>
+                                    {/* Inter-phase Alert (Tea time, etc.) */}
+                                    {phase.interPhaseAlert && (
+                                        <div className={`mb-6 p-4 rounded-xl border ${phase.interPhaseColor || 'bg-yellow-50 border-yellow-200 text-yellow-800'}`}>
+                                            <p className="font-bold flex items-center gap-2">
+                                                {phase.interPhaseAlert}
+                                            </p>
+                                            {phase.interPhaseNote && (
+                                                <p className="text-sm mt-1 opacity-90 ml-6">{phase.interPhaseNote}</p>
+                                            )}
                                         </div>
-                                        <div className="space-y-3 pl-1">
-                                            <div className="flex items-center justify-between text-sm border-b border-slate-50 pb-2">
-                                                 <span className="text-slate-400 font-medium">主要建議</span>
-                                                 <span className="font-bold text-slate-700">{alt.primary}</span>
+                                    )}
+
+                                    {/* Phase Header */}
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className={`p-2 rounded-lg ${phase.color}`}>
+                                            <phase.icon className={`w-6 h-6 ${phase.iconColor}`} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-800">{phase.title}</h3>
+                                            <p className="text-xs text-gray-500 font-medium">{phase.subtitle}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Phase Note */}
+                                    {phase.note && (
+                                        <div className={`mb-3 text-sm px-3 py-2 rounded-lg ${phase.noteType === 'warning' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-gray-100 text-gray-600'}`}>
+                                            {phase.note}
+                                        </div>
+                                    )}
+
+                                    {/* Items Container */}
+                                    <div className="space-y-2 pl-2">
+                                        {/* Standard Items */}
+                                        {phase.items && phase.items.map(item => renderItem(item))}
+
+                                        {/* SubSections (for nested meals) */}
+                                        {phase.subSections && phase.subSections.map((sub, idx) => (
+                                            <div key={idx} className="mt-4 first:mt-2">
+                                                <h4 className="text-sm font-bold text-gray-500 mb-2 ml-1 uppercase tracking-wider">{sub.title}</h4>
+                                                {sub.items.map(item => renderItem(item))}
                                             </div>
-                                            <div className="flex items-center justify-between text-sm">
-                                                 <span className="text-slate-400 font-medium">替代方案</span>
-                                                 <span className="font-bold text-teal-600">{alt.alt}</span>
-                                            </div>
-                                            <div className="bg-slate-50 p-3 rounded-xl text-xs text-slate-500 leading-relaxed font-medium mt-2">
-                                                {alt.note}
-                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Alternatives Section */}
+                        <div className="mt-12 border-t pt-8">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <Repeat className="w-5 h-5 text-gray-500" />
+                                替代方案與備註
+                            </h3>
+                            <div className="grid grid-cols-1 gap-4">
+                                {alternativesData.map((alt, idx) => (
+                                    <div key={idx} className={`p-4 rounded-xl border border-transparent ${alt.color}`}>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <alt.icon className={`w-5 h-5 ${alt.iconColor}`} />
+                                            <h4 className="font-bold text-gray-800">{alt.category}</h4>
+                                        </div>
+                                        <div className="text-sm space-y-1">
+                                            <p><span className="text-gray-500">首選：</span> <span className="font-medium">{alt.primary}</span></p>
+                                            <p><span className="text-gray-500">替代：</span> <span className="font-medium">{alt.alt}</span></p>
+                                            <p className="text-xs text-gray-600 mt-2 bg-white/60 p-2 rounded">{alt.note}</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                        )}
+                        </div>
+
+                        {/* Reset Button */}
+                        <button 
+                            onClick={resetDaily}
+                            className="w-full mt-8 py-3 bg-white border border-red-200 text-red-500 rounded-xl font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            重置今日紀錄
+                        </button>
+                        
+                        <div className="h-10"></div>
                     </div>
-
-                    {/* MODALS */}
-                    {showResetModal && (
-                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setShowResetModal(false)} />
-                            <div className="bg-white rounded-[2rem] p-6 w-full max-w-xs relative z-10 shadow-2xl animate-fade-in">
-                                <div className="text-center">
-                                    <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500">
-                                        <Repeat className="w-6 h-6" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-800 mb-2">確定重置？</h3>
-                                    <p className="text-slate-500 text-sm mb-6 leading-relaxed">這將會清除今日所有的打勾紀錄，進度條將歸零。</p>
-                                    <div className="flex gap-3">
-                                        <button onClick={() => setShowResetModal(false)} className="flex-1 py-3 font-bold text-slate-500 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors">取消</button>
-                                        <button onClick={confirmReset} className="flex-1 py-3 font-bold text-white bg-rose-500 rounded-2xl shadow-lg shadow-rose-200 hover:bg-rose-600 transition-colors">確定清除</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showPackingResetModal && (
-                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setShowPackingResetModal(false)} />
-                            <div className="bg-white rounded-[2rem] p-6 w-full max-w-xs relative z-10 shadow-2xl animate-fade-in">
-                                <div className="text-center">
-                                    <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500">
-                                        <Briefcase className="w-6 h-6" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-800 mb-2">重置打包清單？</h3>
-                                    <p className="text-slate-500 text-sm mb-6 leading-relaxed">所有的行李檢查狀態將會被清空。</p>
-                                    <div className="flex gap-3">
-                                        <button onClick={() => setShowPackingResetModal(false)} className="flex-1 py-3 font-bold text-slate-500 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors">取消</button>
-                                        <button onClick={confirmPackingReset} className="flex-1 py-3 font-bold text-white bg-rose-500 rounded-2xl shadow-lg shadow-rose-200 hover:bg-rose-600 transition-colors">確定清除</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
+        const root = createRoot(document.getElementById('root'));
         root.render(<SupplementApp />);
     </script>
 </body>
