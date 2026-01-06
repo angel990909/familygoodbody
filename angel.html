@@ -59,6 +59,7 @@
         const { useState, useEffect, useCallback, useMemo } = React;
 
         // --- ICON COMPONENTS (SVG) ---
+        // IconBase 預設為 fill="none" (空心) 和 stroke="currentColor" (線條)
         const IconBase = React.memo(({ children, className, ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
         ));
@@ -68,8 +69,20 @@
         const Utensils = (p) => <IconBase {...p}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></IconBase>;
         const Bed = (p) => <IconBase {...p}><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></IconBase>;
         const Coffee = (p) => <IconBase {...p}><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/></IconBase>;
-        // 更新為水平巡航的客機造型 (Side profile, cruising)
-        const Plane = (p) => <IconBase {...p}><path d="M2 12h20"/><path d="M15 12l-3-5h-3l2 5"/><path d="M15 12l-3 5h-3l2-5"/><path d="M6 12l-2-2h-2l2 2"/><path d="M6 12l-2 2h-2l2-2"/></IconBase>;
+        
+        // 更新為：標準飛機、機頭朝上、空心線條
+        // 使用 IconBase 的預設 fill="none" 來達到空心效果
+        const Plane = (p) => <IconBase {...p}>
+            <path d="M12 22s-2-4.5-2-6c0-6 2-6 2-14 0 8 2 8 2 14 0 1.5-2 6-2 6Z" /> {/* 機身與尾部輪廓 */}
+            <path d="M2 12h20" /> {/* 機翼示意線條，或使用更詳細的輪廓 */}
+            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /> {/* 完整空心輪廓 */}
+        </IconBase>;
+        
+        // 修正 Plane 組件，確保只有一個乾淨的空心路徑
+        const PlaneOutline = (p) => <IconBase {...p}>
+             <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+        </IconBase>;
+
         const Milk = (p) => <IconBase {...p}><path d="M8 2h8"/><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"/><path d="M7 15a6.472 6.472 0 0 1 5 0 6.47 6.47 0 0 0 5 0"/></IconBase>;
         const Pill = (p) => <IconBase {...p}><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></IconBase>;
         const Info = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></IconBase>;
@@ -320,7 +333,7 @@
                                             className={`py-1.5 text-xs sm:text-sm font-bold rounded-2xl transition-all duration-200 flex flex-col items-center justify-center px-1
                                             ${activeTab === tab ? 'bg-white text-teal-600 shadow-sm ring-1 ring-black/5 scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}>
                                             {tab === 'two-meals' && <Coffee className="w-4 h-4 mb-0.5" />}
-                                            {tab === 'three-meals' && <Plane className="w-4 h-4 mb-0.5" />}
+                                            {tab === 'three-meals' && <PlaneOutline className="w-4 h-4 mb-0.5" />}
                                             {tab === 'protein' && <Milk className="w-4 h-4 mb-0.5" />}
                                             {tab === 'alternatives' && <Pill className="w-4 h-4 mb-0.5" />}
                                             <span className="text-center leading-tight transform scale-90 sm:scale-100 origin-center">
@@ -461,6 +474,9 @@
                                                 {p.items.map(it => <SupplementCard key={it.id} item={it} isChecked={!!checkedItems[it.id]} onToggle={toggleItem} />)}
                                             </div>
                                         ))}
+                                        <button onClick={handleResetClick} className="w-full py-3 text-slate-400 font-medium hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center gap-2 rounded-3xl transition-colors active:scale-95">
+                                            <Repeat className="w-4 h-4" /> 重置今日紀錄
+                                        </button>
                                     </div>
                                 )}
                             </div>
