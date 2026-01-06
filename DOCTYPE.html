@@ -5,22 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>媽媽的健康小秘書</title>
     
-    <!-- 引入 React 和 ReactDOM -->
+    <!-- 核心庫載入 -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- 引入 Babel 用於解析 JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-        /* 禁止選取文字，讓操作更有 App 的感覺 */
         body {
             -webkit-user-select: none;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .smooth-transition {
+            transition: all 0.2s ease-in-out;
         }
     </style>
 </head>
@@ -30,19 +29,13 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // ----------------------------------------------------------------------
-        // 圖示元件 (手動定義以確保單檔運作)
-        // ----------------------------------------------------------------------
+        // --- Lucide 圖示內嵌 (確保單檔可用) ---
         const IconBase = ({ children, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>{children}</svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>{children}</svg>
         );
-
         const Check = (props) => <IconBase {...props}><polyline points="20 6 9 17 4 12" /></IconBase>;
         const Info = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></IconBase>;
         const Pill = (props) => <IconBase {...props}><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></IconBase>;
-        const Sun = (props) => <IconBase {...props}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></IconBase>;
-        const Moon = (props) => <IconBase {...props}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></IconBase>;
-        const Sunrise = (props) => <IconBase {...props}><path d="M12 2v8"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/><path d="M22 22H2"/><path d="M8 22v-2a4 4 0 0 1 8 0v2"/></IconBase>;
         const AlertTriangle = (props) => <IconBase {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconBase>;
         const BookOpen = (props) => <IconBase {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconBase>;
         const Heart = (props) => <IconBase {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></IconBase>;
@@ -53,123 +46,47 @@
         const Sparkles = (props) => <IconBase {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></IconBase>;
         const RotateCcw = (props) => <IconBase {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></IconBase>;
         const Clock = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>;
-        const X = (props) => <IconBase {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconBase>;
 
-        // ----------------------------------------------------------------------
-        // 數據資料結構
-        // ----------------------------------------------------------------------
-
+        // --- 資料設定 ---
         const SCHEDULE_DATA = [
           {
             id: 'breakfast',
-            title: '🌅 早餐時段',
+            title: '早餐時段',
             subtitle: '吃飽飽、慢慢吃',
-            desc: '【重點：啟動身體 + 處方藥護理】',
+            desc: '【啟動身體 + 處方藥護理】',
             color: 'bg-orange-50',
             borderColor: 'border-orange-200',
             items: [
-              {
-                id: 'b-arinamin',
-                name: 'B群 (黃色糖衣錠)',
-                dose: '2 錠',
-                timing: '吃飯中途吃',
-                tagColor: 'bg-yellow-400 text-yellow-900',
-                note: '隨餐吃，減少胃刺激'
-              },
-              {
-                id: 'b-meletin',
-                name: '脈律循 (處方膠囊/藥錠)',
-                dose: '1 顆',
-                timing: '飯後立刻吃',
-                tagColor: 'bg-red-100 text-red-800',
-                isMed: true
-              },
-              {
-                id: 'b-xanthium',
-                name: '善寧 (長效型膠囊)',
-                dose: '1 顆',
-                timing: '飯後立刻吃',
-                tagColor: 'bg-red-100 text-red-800',
-                isMed: true,
-                warning: '絕對不可咬碎！一定要整顆吞！'
-              },
-              {
-                id: 'b-blueberry',
-                name: '藍莓膠囊 (深紫色軟膠囊)',
-                dose: '2 顆',
-                timing: '飯後吃',
-                tagColor: 'bg-purple-100 text-purple-900',
-                note: '保護眼睛'
-              }
+              { id: 'b-b', name: 'B群 (黃色糖衣錠)', dose: '2 錠', timing: '吃飯中途吃', tagColor: 'bg-yellow-400 text-yellow-900', note: '隨餐吃，減少胃刺激' },
+              { id: 'b-m', name: '脈律循 (處方膠囊/藥錠)', dose: '1 顆', timing: '飯後立刻吃', tagColor: 'bg-red-100 text-red-800', isMed: true },
+              { id: 'b-x', name: '善寧 (長效型膠囊)', dose: '1 顆', timing: '飯後立刻吃', tagColor: 'bg-red-100 text-red-800', isMed: true, warning: '絕對不可咬碎！一定要整顆吞！' },
+              { id: 'b-bl', name: '藍莓膠囊 (深紫色軟膠囊)', dose: '2 顆', timing: '飯後吃', tagColor: 'bg-purple-100 text-purple-900', note: '保護眼睛' }
             ]
           },
           {
             id: 'lunch',
-            title: '☀️ 午餐時段',
+            title: '午餐時段',
             subtitle: '營養補充主力',
-            desc: '【重點：油溶性營養分散負擔】',
+            desc: '【油溶性營養分散負擔】',
             color: 'bg-yellow-50',
             borderColor: 'border-yellow-200',
             items: [
-              {
-                id: 'l-seal',
-                name: '海豹油 (金黃透明膠囊)',
-                dose: '2 顆',
-                timing: '吃飯中途吃',
-                tagColor: 'bg-green-200 text-green-900',
-                note: '吃飯吃一半 -> 吞海豹油 -> 繼續吃'
-              },
-              {
-                id: 'l-kvinna',
-                name: 'Kvinna 60+ (粉紅橢圓錠)',
-                dose: '1 錠',
-                timing: '吃飯中途吃',
-                tagColor: 'bg-pink-200 text-pink-900',
-                note: '綜合維他命'
-              }
+              { id: 'l-s', name: '海豹油 (金黃透明膠囊)', dose: '2 顆', timing: '吃飯中途吃', tagColor: 'bg-green-200 text-green-900', note: '吃飯吃一半 -> 吞下 -> 繼續吃飯' },
+              { id: 'l-k', name: 'Kvinna 60+ (粉紅橢圓錠)', dose: '1 錠', timing: '吃飯中途吃', tagColor: 'bg-pink-200 text-pink-900', note: '女性綜合維他命' }
             ]
           },
           {
             id: 'dinner',
-            title: '🌙 晚餐時段',
+            title: '晚餐時段',
             subtitle: '七分飽、早點吃',
-            desc: '【重點：減輕夜間胃部壓力 + 關節修復】',
+            desc: '【減輕夜間壓力 + 關節修復】',
             color: 'bg-indigo-50',
             borderColor: 'border-indigo-200',
             items: [
-              {
-                id: 'd-meletin',
-                name: '脈律循 (處方膠囊/藥錠)',
-                dose: '1 顆',
-                timing: '飯後立刻吃',
-                tagColor: 'bg-red-100 text-red-800',
-                isMed: true
-              },
-              {
-                id: 'd-xanthium',
-                name: '善寧 (長效型膠囊)',
-                dose: '1 顆',
-                timing: '飯後立刻吃',
-                tagColor: 'bg-red-100 text-red-800',
-                isMed: true,
-                warning: '容易導致夜咳，吃完請坐著休息，勿躺下'
-              },
-              {
-                id: 'd-shark',
-                name: '鯊魚軟骨 (白色膠囊)',
-                dose: '2 顆',
-                timing: '飯後立刻吃',
-                tagColor: 'bg-gray-200 text-gray-800',
-                note: '若覺得太脹，可改到早餐吃'
-              },
-              {
-                id: 'd-wakamoto',
-                name: '若元錠 (淡褐色小圓錠)',
-                dose: '9 錠',
-                timing: '飯後立刻吃',
-                tagColor: 'bg-orange-200 text-orange-900',
-                note: '幫助快速消化，避免逆流'
-              }
+              { id: 'd-m', name: '脈律循 (處方膠囊/藥錠)', dose: '1 顆', timing: '飯後立刻吃', tagColor: 'bg-red-100 text-red-800', isMed: true },
+              { id: 'd-x', name: '善寧 (長效型膠囊)', dose: '1 顆', timing: '飯後立刻吃', tagColor: 'bg-red-100 text-red-800', isMed: true, warning: '容易導致夜咳，吃完請坐著休息，勿躺下' },
+              { id: 'd-sh', name: '鯊魚軟骨 (白色膠囊)', dose: '2 顆', timing: '飯後立刻吃', tagColor: 'bg-gray-200 text-gray-800', note: '若覺得太脹，可改到早餐吃' },
+              { id: 'd-w', name: '若元錠 (淡褐色小圓錠)', dose: '9 錠', timing: '飯後立刻吃', tagColor: 'bg-orange-200 text-orange-900', note: '幫助快速消化，避免逆流' }
             ]
           }
         ];
@@ -178,181 +95,48 @@
           {
             category: '保養品',
             items: [
-              {
-                title: 'B群 (黃色瓶)',
-                iconColor: 'bg-yellow-400',
-                icon: <Zap className="w-6 h-6 text-yellow-900" />,
-                function: '強力 B 群（修復神經、消疲勞）',
-                message: '這是幫神經系統充電的。如果覺得腰痠背痛、肩膀僵硬，或是身體覺得很累的時候，這個很有幫助。'
-              },
-              {
-                title: '女性綜合維他命 (粉紅瓶)',
-                iconColor: 'bg-pink-300',
-                icon: <Shield className="w-6 h-6 text-pink-900" />,
-                function: '銀髮女性專用底座（補鈣、顧骨本）',
-                message: '這是專門給60歲以上女生設計的。裡面有鈣質跟維生素D，能預防骨質流失，是每天的基礎保養。'
-              },
-              {
-                title: '藍莓膠囊 (銀瓶+藍莓圖)',
-                iconColor: 'bg-purple-600',
-                icon: <Eye className="w-6 h-6 text-white" />,
-                function: '眼睛的維他命（顧老花、抗藍光）',
-                message: '裡面有花青素和葉黃素。針對您的老花眼，或是看電視久了眼睛乾澀、流眼淚，吃這個保護視網膜。'
-              },
-              {
-                title: '海豹油 (綠色瓶)',
-                iconColor: 'bg-green-500',
-                icon: <Heart className="w-6 h-6 text-white" />,
-                function: '血管清道夫（Omega-3、抗發炎）',
-                message: '這是來自北歐的好油。可以幫忙清理血管裡的髒東西，保護心臟，對您的心律不整保養有好處，也能減輕鼻子過敏的發炎反應。'
-              },
-              {
-                title: '鯊魚軟骨 (銀瓶+深藍標籤)',
-                iconColor: 'bg-blue-800',
-                icon: <Activity className="w-6 h-6 text-white" />,
-                function: '關節潤滑油（顧膝蓋、軟骨）',
-                message: '這是給膝蓋「上油」的。裡面有葡萄糖胺，讓走路比較有力，減少關節卡卡或磨損的感覺。'
-              },
-              {
-                title: '若元錠 (橘色盒)',
-                iconColor: 'bg-orange-500',
-                icon: <Sparkles className="w-6 h-6 text-white" />,
-                function: '腸胃小幫手（助消化、防脹氣）',
-                message: '這是消化酵素。因為您有胃食道逆流，這個可以幫忙把胃裡的東西趕快消化掉，比較不會脹氣或火燒心。'
-              }
+              { title: 'B群 (黃色瓶)', iconColor: 'bg-yellow-400', icon: <Zap className="w-6 h-6 text-yellow-900" />, function: '修復神經、消疲勞', message: '腰痠背痛、肩膀僵硬或覺得累的時候很有幫助。' },
+              { title: '女性綜合維他命 (粉紅瓶)', iconColor: 'bg-pink-300', icon: <Shield className="w-6 h-6 text-pink-900" />, function: '補鈣、顧骨本', message: '專門給60歲以上女性，預防骨質流失。' },
+              { title: '藍莓膠囊 (銀瓶+藍莓圖)', iconColor: 'bg-purple-600', icon: <Eye className="w-6 h-6 text-white" />, function: '顧老花、抗藍光', message: '保護視網膜，改善看電視後的眼睛乾澀。' },
+              { title: '海豹油 (綠色瓶)', iconColor: 'bg-green-500', icon: <Heart className="w-6 h-6 text-white" />, function: '血管清道夫、抗發炎', message: '清理血管髒東西，保護心臟與減輕鼻子過敏。' },
+              { title: '鯊魚軟骨 (銀瓶+藍標)', iconColor: 'bg-blue-800', icon: <Activity className="w-6 h-6 text-white" />, function: '顧膝蓋、潤滑軟骨', message: '讓走路比較有力，減少關節磨損卡卡的感覺。' },
+              { title: '若元錠 (橘色盒)', iconColor: 'bg-orange-500', icon: <Sparkles className="w-6 h-6 text-white" />, function: '助消化、防脹氣', message: '消化酵素。把晚餐趕快消化掉，比較不會火燒心。' }
             ]
           },
           {
             category: '🏥 醫師處方藥 (不能停)',
             isMed: true,
             items: [
-              {
-                title: '脈律循 (Meletin)',
-                iconColor: 'bg-red-100',
-                textColor: 'text-red-800',
-                function: '控制心律不整',
-                message: '這是心臟科醫師開的，絕對不能自己停藥，也不能忘記吃。'
-              },
-              {
-                title: '善寧 (Xanthium)',
-                iconColor: 'bg-red-100',
-                textColor: 'text-red-800',
-                function: '支氣管擴張（治氣喘/呼吸道）',
-                message: '這顆藥絕對不能配咖啡或茶，不然心跳會變很快、手會抖。'
-              }
+              { title: '脈律循 (Meletin)', iconColor: 'bg-red-100', textColor: 'text-red-800', function: '控制心律不整', message: '心臟科開的，絕對不能自己停藥或忘記吃。' },
+              { title: '善寧 (Xanthium)', iconColor: 'bg-red-100', textColor: 'text-red-800', function: '支氣管擴張', message: '絕不能配咖啡或茶，不然心跳會變很快。' }
             ]
           }
         ];
 
-        // ----------------------------------------------------------------------
-        // 元件：單個藥品卡片
-        // ----------------------------------------------------------------------
-
-        const MedItem = ({ item, isTaken, onToggle }) => {
-          return (
-            <div 
-              onClick={() => onToggle(item.id)}
-              className={`
-                relative mb-4 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer select-none
-                ${isTaken 
-                  ? 'bg-green-50 border-green-500 shadow-sm opacity-80' 
-                  : 'bg-white border-gray-200 shadow-md active:scale-95'
-                }
-              `}
-            >
-              <div className="flex justify-between items-start">
+        // --- 元件製作 ---
+        const MedItem = ({ item, isTaken, onToggle }) => (
+            <div onClick={() => onToggle(item.id)} className={`relative mb-2 p-3 rounded-xl border-2 smooth-transition cursor-pointer ${isTaken ? 'bg-green-50 border-green-500 opacity-80' : 'bg-white border-gray-200 shadow-sm'}`}>
+              <div className="flex justify-between items-start gap-2">
                 <div className="flex-1">
-                  {/* 標籤區 */}
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    <span className={`px-2 py-1 rounded-lg text-sm font-bold ${item.tagColor}`}>
-                      {item.isMed ? '藥品' : '保健品'}
-                    </span>
-                    <span className="bg-blue-100 text-blue-900 px-2 py-1 rounded-lg text-sm font-bold">
-                      {item.dose}
-                    </span>
+                  <div className="flex flex-wrap gap-2 mb-1">
+                    <span className={`px-2 py-0.5 rounded-lg text-sm font-bold ${item.tagColor}`}>{item.isMed ? '藥品' : '保養品'}</span>
+                    <span className="bg-blue-100 text-blue-900 px-2 py-0.5 rounded-lg text-sm font-bold">{item.dose}</span>
                   </div>
-
-                  {/* 名稱區 */}
-                  <h3 className={`text-xl font-bold mb-1 ${isTaken ? 'text-green-800 line-through' : 'text-gray-900'}`}>
-                    {item.name}
-                  </h3>
-                  
-                  {/* 備註 */}
-                  {item.note && (
-                    <p className="text-base text-gray-500 font-medium">
-                      💡 {item.note}
-                    </p>
-                  )}
-
-                  {/* 警示語 */}
+                  <h3 className={`text-xl font-bold mb-1 leading-tight ${isTaken ? 'text-green-800 line-through' : 'text-gray-900'}`}>{item.name}</h3>
+                  {item.note && <p className="text-base text-gray-500 font-medium italic">💡 {item.note}</p>}
                   {item.warning && (
-                    <div className="mt-2 flex items-start p-2 bg-red-50 rounded-lg border border-red-200">
-                      <AlertTriangle className="w-5 h-5 text-red-600 mr-2 flex-shrink-0 mt-1" />
-                      <p className="text-red-700 font-bold text-base leading-tight">
-                        {item.warning}
-                      </p>
+                    <div className="mt-1 flex items-start p-1.5 bg-red-50 rounded-lg border border-red-200">
+                      <AlertTriangle className="w-5 h-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                      <p className="text-red-700 font-bold text-base leading-tight">{item.warning}</p>
                     </div>
                   )}
                 </div>
-
-                {/* 勾選按鈕 */}
-                <div className={`
-                  w-14 h-14 rounded-full flex items-center justify-center border-4 ml-3 flex-shrink-0
-                  ${isTaken ? 'bg-green-500 border-green-500' : 'bg-gray-50 border-gray-300'}
-                `}>
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center border-4 flex-shrink-0 ${isTaken ? 'bg-green-500 border-green-500' : 'bg-gray-50 border-gray-300'}`}>
                   {isTaken && <Check className="w-8 h-8 text-white" strokeWidth={4} />}
                 </div>
               </div>
-              
-              {isTaken && (
-                <div className="absolute top-2 right-2">
-                  <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                    已吃
-                  </span>
-                </div>
-              )}
             </div>
-          );
-        };
-
-        // ----------------------------------------------------------------------
-        // 元件：功效卡片
-        // ----------------------------------------------------------------------
-        const BenefitCard = ({ item, isMed }) => (
-          <div className={`mb-4 rounded-xl border-2 overflow-hidden ${isMed ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`}>
-            <div className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                {/* 顏色標籤/圖示 */}
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 ${item.iconColor} ${item.textColor || ''}`}>
-                  {isMed ? <Pill className="w-7 h-7" /> : item.icon}
-                </div>
-                <h3 className={`text-xl font-bold ${isMed ? 'text-red-900' : 'text-gray-900'}`}>
-                  {item.title}
-                </h3>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="bg-white/60 p-2 rounded-lg">
-                  <span className="font-bold text-emerald-700 block mb-1">✨ 功能：</span>
-                  <span className="text-lg font-bold text-gray-800">{item.function}</span>
-                </div>
-                
-                <div className={`p-3 rounded-lg relative ${isMed ? 'bg-white border-l-4 border-red-500' : 'bg-blue-50 border-l-4 border-blue-400'}`}>
-                  <p className="text-sm font-bold text-gray-500 mb-1">
-                     {isMed ? '🩺 醫師交代：' : '💬 給長輩的話：'}
-                  </p>
-                  <p className={`text-lg leading-relaxed ${isMed ? 'text-red-800 font-bold' : 'text-gray-700'}`}>
-                    {item.message}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
         );
-
-        // ----------------------------------------------------------------------
-        // 元件：主應用程式
-        // ----------------------------------------------------------------------
 
         function App() {
           const [activeTab, setActiveTab] = useState('schedule');
@@ -361,348 +145,152 @@
 
           useEffect(() => {
             const today = new Date().toDateString();
-            const savedDate = localStorage.getItem('medApp_lastDate');
-            const savedItems = JSON.parse(localStorage.getItem('medApp_items') || '{}');
-
+            const savedDate = localStorage.getItem('lastDate');
+            const savedItems = JSON.parse(localStorage.getItem('takenItems') || '{}');
             if (savedDate !== today) {
               setTakenItems({});
-              localStorage.setItem('medApp_lastDate', today);
-            } else {
-              setTakenItems(savedItems);
-            }
+              localStorage.setItem('lastDate', today);
+            } else { setTakenItems(savedItems); }
           }, []);
 
           const toggleItem = (id) => {
             const newStatus = { ...takenItems, [id]: !takenItems[id] };
             setTakenItems(newStatus);
-            localStorage.setItem('medApp_items', JSON.stringify(newStatus));
+            localStorage.setItem('takenItems', JSON.stringify(newStatus));
           };
 
-          const handleResetClick = () => {
-            setShowResetModal(true);
-          };
-
-          const confirmReset = () => {
-            setTakenItems({});
-            localStorage.setItem('medApp_items', JSON.stringify({}));
-            setShowResetModal(false);
-          };
+          const confirmReset = () => { setTakenItems({}); localStorage.setItem('takenItems', '{}'); setShowResetModal(false); };
 
           const totalItems = SCHEDULE_DATA.reduce((acc, curr) => acc + curr.items.length, 0);
           const completedItems = Object.values(takenItems).filter(Boolean).length;
           const progress = Math.round((completedItems / totalItems) * 100);
-
-          const getTimingStyle = (timing) => {
-            if (timing.includes('中途')) {
-              return 'bg-yellow-200 border-yellow-400 text-yellow-900';
-            } else if (timing.includes('立刻')) {
-              return 'bg-red-100 border-red-400 text-red-900';
-            } else {
-              return 'bg-blue-100 border-blue-400 text-blue-900';
-            }
-          };
-
-          const currentDateStr = new Date().toLocaleDateString('zh-TW', { 
-            month: 'long', 
-            day: 'numeric', 
-            weekday: 'long' 
-          });
-
-          const renderContent = () => {
-            switch (activeTab) {
-              case 'schedule':
-                return (
-                  <div className="space-y-8">
-                    {SCHEDULE_DATA.map((section) => {
-                      const groupedItems = section.items.reduce((acc, item) => {
-                        const timeKey = item.timing;
-                        if (!acc[timeKey]) {
-                          acc[timeKey] = [];
-                        }
-                        acc[timeKey].push(item);
-                        return acc;
-                      }, {});
-
-                      const timingOrder = ['吃飯中途吃', '飯後立刻吃', '飯後吃'];
-                      const sortedTimings = Object.keys(groupedItems).sort((a, b) => {
-                        const indexA = timingOrder.indexOf(a);
-                        const indexB = timingOrder.indexOf(b);
-                        const valA = indexA === -1 ? 99 : indexA;
-                        const valB = indexB === -1 ? 99 : indexB;
-                        return valA - valB;
-                      });
-
-                      return (
-                        <div key={section.id} className={`${section.color} rounded-2xl p-4 border-2 ${section.borderColor}`}>
-                          <div className="flex items-center gap-3 mb-4 border-b border-black/10 pb-3">
-                            <div>
-                              <h2 className="text-2xl font-black text-gray-800">{section.title}</h2>
-                              <p className="text-lg text-gray-600 font-medium">{section.subtitle}</p>
-                            </div>
-                          </div>
-                          <div className="bg-white/50 p-2 mb-4 rounded-lg text-base font-medium text-gray-700">
-                            {section.desc}
-                          </div>
-
-                          <div>
-                            {sortedTimings.map(timing => (
-                              <div key={timing} className="mb-6 last:mb-0">
-                                <div className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-xl inline-flex border-2 shadow-sm ${getTimingStyle(timing)}`}>
-                                   <Clock className="w-6 h-6" strokeWidth={2.5} />
-                                   <span className="text-xl font-black tracking-wide">{timing}</span>
-                                </div>
-                                
-                                {groupedItems[timing].map((item) => (
-                                  <MedItem 
-                                    key={item.id}
-                                    item={item}
-                                    isTaken={!!takenItems[item.id]}
-                                    onToggle={toggleItem}
-                                  />
-                                ))}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    <div className="flex justify-center pb-4">
-                      <button
-                        onClick={handleResetClick}
-                        className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all active:scale-95 text-base"
-                      >
-                        <RotateCcw className="w-5 h-5" />
-                        重置今日紀錄
-                      </button>
-                    </div>
-
-                    <div className="h-8" />
-                  </div>
-                );
-
-              case 'benefits':
-                return (
-                  <div className="space-y-6">
-                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
-                       <h2 className="text-xl font-bold text-emerald-800 mb-2">💡 總結小叮嚀</h2>
-                       <p className="text-lg text-gray-800 leading-relaxed font-medium">
-                         「早晚的西藥是治病的，一定要準時吃；若元錠是幫忙胃消化的，吃飽覺得脹就吃；其他的瓶瓶罐罐是保養身體的，跟著飯一起吃吸收最好！」
-                       </p>
-                    </div>
-
-                    {BENEFITS_DATA.map((section, idx) => (
-                      <div key={idx}>
-                        <h2 className={`text-2xl font-black mb-4 flex items-center ${section.isMed ? 'text-red-700' : 'text-gray-800'}`}>
-                           {section.category}
-                        </h2>
-                        {section.items.map((item, i) => (
-                          <BenefitCard key={i} item={item} isMed={section.isMed} />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                );
-
-              case 'info':
-                return (
-                  <div className="space-y-6">
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
-                      <h2 className="text-2xl font-bold text-red-600 flex items-center mb-4">
-                        <AlertTriangle className="w-8 h-8 mr-2" />
-                        飲食大禁忌
-                      </h2>
-                      <div className="space-y-4 text-lg">
-                        <div className="bg-red-50 p-3 rounded-lg">
-                          <h3 className="font-bold text-red-800 mb-1">🚫 禁止湯泡飯</h3>
-                          <p>乾濕要分離！飯前喝幾口湯就好，飯後不要大量喝水，避免胃撐大。</p>
-                        </div>
-                        <div className="bg-red-50 p-3 rounded-lg">
-                          <h3 className="font-bold text-red-800 mb-1">🚫 咖啡與濃茶</h3>
-                          <p>中午以後「禁止」攝取咖啡因。若要喝茶只能在早上喝「淡茶」。</p>
-                        </div>
-                        <div className="bg-red-50 p-3 rounded-lg">
-                          <h3 className="font-bold text-red-800 mb-1">🚫 甜食與糯米</h3>
-                          <p>紅豆湯、湯圓、甜糕點是大地雷。晚餐後絕對不要吃甜點。</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
-                       <h2 className="text-2xl font-bold text-emerald-700 flex items-center mb-4">
-                        <BookOpen className="w-8 h-8 mr-2" />
-                        各時段護胃重點
-                      </h2>
-                      
-                      <div className="space-y-6">
-                        <div className="bg-orange-50 p-4 rounded-xl border-2 border-orange-100">
-                          <h3 className="text-xl font-black text-orange-800 flex items-center mb-3">
-                             早餐 (啟動身體)
-                          </h3>
-                          <div className="pl-2 space-y-2">
-                            <p className="text-lg font-bold text-gray-800">
-                              💊 處方藥 x2 + <span className="text-yellow-600 bg-yellow-100 px-1 rounded">B群</span> + 藍莓
-                            </p>
-                            <div className="bg-white p-3 rounded-lg border-l-4 border-red-500 shadow-sm">
-                              <p className="font-bold text-red-700 text-lg mb-1">⚠️ 重要提醒：</p>
-                              <p className="text-gray-700 leading-relaxed">
-                                藥丸請配<span className="font-black text-blue-600 mx-1">「白開水」</span>吞服。<br/>
-                                <span className="font-bold text-red-600">禁止配牛奶或豆漿</span>，以免影響吸收或刺激胃部。
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-yellow-50 p-4 rounded-xl border-2 border-yellow-100">
-                          <h3 className="text-xl font-black text-yellow-800 flex items-center mb-3">
-                             午餐 (分散油膩)
-                          </h3>
-                          <div className="pl-2 space-y-2">
-                            <p className="text-lg font-bold text-gray-800">
-                              💊 <span className="text-green-700 bg-green-100 px-1 rounded">海豹油</span> + 綜合維他命
-                            </p>
-                            <div className="bg-white p-3 rounded-lg border-l-4 border-green-500 shadow-sm">
-                              <p className="font-bold text-green-800 text-lg mb-1">💡 吃法技巧：</p>
-                              <p className="text-gray-700 leading-relaxed">
-                                海豹油務必在<span className="font-black text-green-700 mx-1">「吃飯中間」</span>吞下。<br/>
-                                <span className="text-sm text-gray-500">（飯吃一半 ➜ 吞海豹油 ➜ 繼續吃飯）</span>
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-indigo-50 p-4 rounded-xl border-2 border-indigo-100">
-                          <h3 className="text-xl font-black text-indigo-800 flex items-center mb-3">
-                             晚餐 (夜間消化)
-                          </h3>
-                          <div className="pl-2 space-y-2">
-                            <p className="text-lg font-bold text-gray-800">
-                              💊 處方藥 x2 + 鯊魚軟骨 + <span className="text-orange-600 bg-orange-100 px-1 rounded">若元錠</span>
-                            </p>
-                            <div className="bg-white p-3 rounded-lg border-l-4 border-orange-500 shadow-sm">
-                              <p className="font-bold text-orange-800 text-lg mb-1">⭐ 必吃重點：</p>
-                              <p className="text-gray-700 leading-relaxed">
-                                <span className="font-black text-orange-600 mx-1">若元錠一定要吃！</span><br/>
-                                它能幫助消化晚餐食物，避免睡覺時胃裡積食導致逆流。
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                      </div>
-                    </div>
-                  </div>
-                );
-              
-              default:
-                return null;
-            }
-          };
+          const currentDateStr = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' });
 
           return (
-            <div className="min-h-screen bg-gray-100 pb-24 font-sans text-gray-900 relative pt-[180px]">
-              
+            <div className={`min-h-screen bg-gray-100 pb-24 font-sans text-gray-900 relative ${activeTab === 'schedule' ? 'pt-[160px]' : 'pt-[125px]'}`}>
+              {/* Header */}
               <div className="bg-emerald-600 py-3 px-4 fixed top-0 left-0 right-0 z-20 shadow-md">
-                <h1 className="text-2xl font-bold text-white text-center mb-1">
-                   媽媽的健康小秘書
-                </h1>
-                
-                <div className="text-white text-center space-y-1">
-                  <p className="text-2xl font-bold opacity-90 tracking-wide">
-                    {currentDateStr}
-                  </p>
-                  
-                  {activeTab === 'schedule' && (
-                    <p className="text-2xl font-bold text-yellow-300">
-                      今日進度：{completedItems} / {totalItems} 項
-                    </p>
-                  )}
+                <h1 className="text-2xl font-bold text-white text-center mb-1">媽媽的健康小秘書</h1>
+                <div className="text-white text-center">
+                  <p className="text-2xl font-bold tracking-wide">{currentDateStr}</p>
+                  {activeTab === 'schedule' && <p className="text-2xl font-bold text-yellow-300">今日進度：{completedItems} / {totalItems} 項</p>}
                 </div>
-
                 {activeTab === 'schedule' && (
-                  <div className="mt-2 bg-emerald-800/50 rounded-full h-3 w-full overflow-hidden border border-emerald-500/30">
-                    <div 
-                      className="bg-yellow-400 h-full transition-all duration-500 shadow-[0_0_10px_rgba(250,204,21,0.5)]"
-                      style={{ width: `${progress}%` }}
-                    />
+                  <div className="mt-2 bg-emerald-800/50 rounded-full h-3.5 w-full overflow-hidden border border-emerald-500/30">
+                    <div className="bg-yellow-400 h-full smooth-transition shadow-[0_0_10px_rgba(250,204,21,0.5)]" style={{ width: `${progress}%` }} />
                   </div>
                 )}
               </div>
 
-              <div className="max-w-md mx-auto p-4">
-                {renderContent()}
+              {/* Content Area */}
+              <div className="max-w-md mx-auto p-3">
+                {activeTab === 'schedule' && (
+                  <div className="space-y-4">
+                    {SCHEDULE_DATA.map(section => {
+                        const grouped = section.items.reduce((acc, item) => {
+                            (acc[item.timing] = acc[item.timing] || []).push(item);
+                            return acc;
+                        }, {});
+                        const order = ['吃飯中途吃', '飯後立刻吃', '飯後吃'];
+                        return (
+                          <div key={section.id} className={`${section.color} rounded-2xl p-3 border-2 ${section.borderColor}`}>
+                            <div className="border-b border-black/10 pb-2 mb-2">
+                              <h2 className="text-2xl font-black text-gray-800">{section.title}</h2>
+                              <p className="text-lg font-bold text-gray-600">{section.subtitle}</p>
+                            </div>
+                            <div className="bg-white/50 py-1 px-2 mb-3 rounded-lg text-base font-bold text-gray-700">{section.desc}</div>
+                            {order.map(t => grouped[t] && (
+                                <div key={t} className="mb-4 last:mb-0">
+                                  <div className={`flex items-center gap-2 mb-2 px-2 py-1.5 rounded-xl border-2 shadow-sm ${t.includes('中途') ? 'bg-yellow-200 border-yellow-400 text-yellow-900' : t.includes('立刻') ? 'bg-red-100 border-red-400 text-red-900' : 'bg-blue-100 border-blue-400 text-blue-900'}`}>
+                                    <Clock className="w-5 h-5" /><span className="text-xl font-black">{t}</span>
+                                  </div>
+                                  {grouped[t].map(item => <MedItem key={item.id} item={item} isTaken={!!takenItems[item.id]} onToggle={toggleItem} />)}
+                                </div>
+                            ))}
+                          </div>
+                        );
+                    })}
+                    <div className="flex justify-center pb-2"><button onClick={() => setShowResetModal(true)} className="flex items-center gap-2 bg-emerald-500 text-white font-bold py-3 px-8 rounded-full shadow-lg text-lg"><RotateCcw className="w-5 h-5" />重置今日紀錄</button></div>
+                  </div>
+                )}
+
+                {activeTab === 'benefits' && (
+                  <div className="space-y-3">
+                    <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+                        <h2 className="text-xl font-bold text-emerald-800 mb-1">💡 叮嚀</h2>
+                        <p className="text-lg text-gray-800 font-bold">西藥治病準時吃；若元錠幫消化，脹就吃；其餘跟餐吃最好！</p>
+                    </div>
+                    {BENEFITS_DATA.map((sec, idx) => (
+                      <div key={idx}>
+                        <h2 className={`text-2xl font-black mb-2 ${sec.isMed ? 'text-red-700' : 'text-gray-800'}`}>{sec.category}</h2>
+                        {sec.items.map((it, i) => (
+                          <div key={i} className={`mb-2 rounded-xl border-2 p-3 ${sec.isMed ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${it.iconColor}`}>{sec.isMed ? <Pill className="text-red-800" /> : it.icon}</div>
+                              <h3 className="text-lg font-bold">{it.title}</h3>
+                            </div>
+                            <div className="bg-white/60 p-2 rounded-lg mb-2"><span className="font-bold text-emerald-700 block">功能：</span><span className="text-lg font-bold">{it.function}</span></div>
+                            <div className={`p-2 rounded-lg border-l-4 ${sec.isMed ? 'bg-white border-red-500' : 'bg-blue-50 border-blue-400'}`}>
+                              <p className="text-sm font-bold text-gray-500 mb-0.5">{sec.isMed ? '🩺 醫師：' : '💬 給媽：'}</p>
+                              <p className="text-lg font-bold leading-tight">{it.message}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeTab === 'info' && (
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+                        <h2 className="text-2xl font-bold text-red-600 mb-2">🚫 飲食大禁忌</h2>
+                        <div className="space-y-3 text-lg font-bold">
+                            <div className="bg-red-50 p-2 rounded-lg"><h3>禁止湯泡飯</h3><p className="text-gray-600 font-normal">乾濕分離！飯前喝幾口，飯後不灌水。</p></div>
+                            <div className="bg-red-50 p-2 rounded-lg"><h3>咖啡與濃茶</h3><p className="text-gray-600 font-normal">中午以後禁止。若喝茶只能早上喝淡茶。</p></div>
+                            <div className="bg-red-50 p-2 rounded-lg"><h3>甜食與糯米</h3><p className="text-gray-600 font-normal">糕點、紅豆湯是地雷。晚餐後絕不吃甜。</p></div>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+                        <h2 className="text-2xl font-bold text-emerald-700 mb-2 font-black text-center">護胃吃法重點</h2>
+                        {['早餐', '午餐', '晚餐'].map(t => (
+                            <div key={t} className={`p-3 rounded-xl border-2 mb-3 ${t==='早餐'?'bg-orange-50 border-orange-100':t==='午餐'?'bg-yellow-50 border-yellow-100':'bg-indigo-50 border-indigo-100'}`}>
+                                <h3 className="text-xl font-black mb-1 text-center">{t}</h3>
+                                <div className="bg-white p-2 rounded-lg border-l-4 border-gray-400 shadow-sm text-lg font-bold leading-tight">
+                                    {t==='早餐'?<span>💊 處方藥+B群+藍莓。配<span className="text-blue-600">白開水</span>。<span className="text-red-600">不准配牛奶/豆漿</span>。</span> : 
+                                     t==='午餐'?<span>💊 海豹油在<span className="text-green-700">「吃飯中間」</span>吞下。</span> : 
+                                     <span>💊 處方藥+軟骨+<span className="text-orange-600">若元錠(必吃)</span>。助消化防逆流。</span>}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40">
+              {/* Footer */}
+              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-40">
                 <div className="flex justify-around max-w-md mx-auto">
-                  <button 
-                    onClick={() => setActiveTab('schedule')}
-                    className={`flex flex-col items-center justify-center p-2 w-1/3 transition-colors border-r border-gray-200 ${
-                      activeTab === 'schedule' 
-                        ? 'bg-emerald-600 text-white' 
-                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                    }`}
-                  >
-                    <Pill className="w-7 h-7 mb-1" />
-                    <span className="text-lg font-bold">今日課表</span>
-                  </button>
-                  
-                  <button 
-                    onClick={() => setActiveTab('benefits')}
-                    className={`flex flex-col items-center justify-center p-2 w-1/3 transition-colors border-r border-gray-200 ${
-                      activeTab === 'benefits' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
-                    }`}
-                  >
-                    <Sparkles className="w-7 h-7 mb-1" />
-                    <span className="text-lg font-bold">功效百科</span>
-                  </button>
-
-                  <button 
-                    onClick={() => setActiveTab('info')}
-                    className={`flex flex-col items-center justify-center p-2 w-1/3 transition-colors ${
-                      activeTab === 'info' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                    }`}
-                  >
-                    <Info className="w-7 h-7 mb-1" />
-                    <span className="text-lg font-bold">禁忌叮嚀</span>
-                  </button>
+                  <button onClick={() => setActiveTab('schedule')} className={`flex flex-col items-center justify-center p-2 w-1/3 border-r ${activeTab === 'schedule' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700'}`}><Pill className="w-8 h-8 mb-1" /><span className="text-lg font-bold">今日課表</span></button>
+                  <button onClick={() => setActiveTab('benefits')} className={`flex flex-col items-center justify-center p-2 w-1/3 border-r ${activeTab === 'benefits' ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-700'}`}><Sparkles className="w-8 h-8 mb-1" /><span className="text-lg font-bold">功效百科</span></button>
+                  <button onClick={() => setActiveTab('info')} className={`flex flex-col items-center justify-center p-2 w-1/3 ${activeTab === 'info' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700'}`}><Info className="w-8 h-8 mb-1" /><span className="text-lg font-bold">禁忌叮嚀</span></button>
                 </div>
               </div>
 
+              {/* Reset Modal */}
               {showResetModal && (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-                    <div className="text-center">
-                      <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
-                        <AlertTriangle className="h-10 w-10 text-red-600" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">確定要清除嗎？</h3>
-                      <p className="text-lg text-gray-500 mb-8">
-                        這會把今天所有打勾的紀錄都變回原狀喔！
-                      </p>
-                      <div className="flex gap-4">
-                        <button
-                          onClick={() => setShowResetModal(false)}
-                          className="w-1/2 py-4 px-4 rounded-xl bg-gray-100 text-gray-700 font-bold text-xl hover:bg-gray-200 transition-colors"
-                        >
-                          取消
-                        </button>
-                        <button
-                          onClick={confirmReset}
-                          className="w-1/2 py-4 px-4 rounded-xl bg-red-500 text-white font-bold text-xl hover:bg-red-600 transition-colors"
-                        >
-                          確定清除
-                        </button>
-                      </div>
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center">
+                    <div className="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-600"><AlertTriangle className="h-10 w-10" /></div>
+                    <h3 className="text-2xl font-bold mb-2">確定重置？</h3>
+                    <p className="text-xl font-bold text-gray-500 mb-8">勾勾會全部消失喔！</p>
+                    <div className="flex gap-4">
+                      <button onClick={() => setShowResetModal(false)} className="w-1/2 py-4 bg-gray-100 text-gray-700 font-bold text-xl rounded-2xl">取消</button>
+                      <button onClick={confirmReset} className="w-1/2 py-4 bg-red-500 text-white font-bold text-xl rounded-2xl">確定清除</button>
                     </div>
                   </div>
                 </div>
               )}
-
             </div>
           );
         }
