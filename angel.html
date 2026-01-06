@@ -1,4 +1,4 @@
-<!angel html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -21,20 +21,33 @@
         
         body {
             background-color: #f8fafc; /* slate-50 */
+            -webkit-tap-highlight-color: transparent;
         }
         
-        /* 自定義圓體字型設定 */
         .font-rounded {
             font-family: 'Nunito', 'Hiragino Maru Gothic ProN', 'Rounded Mplus 1c', 'Microsoft JhengHei', sans-serif;
         }
 
-        /* 隱藏滾動條但保留功能 */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
         .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* 動態進度條動畫 */
+        .progress-glow {
+            box-shadow: 0 0 10px rgba(20, 184, 166, 0.5);
+        }
+
+        /* 簡單的淡入動畫 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
         }
     </style>
 </head>
@@ -42,37 +55,37 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, Fragment } = React;
 
-        // --- ICON COMPONENTS (Inline SVGs to avoid dependencies) ---
+        // --- ICON COMPONENTS (SVG) ---
         const IconBase = ({ children, className, ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
         );
 
-        const Sunrise = (props) => <IconBase {...props}><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></IconBase>;
-        const Sun = (props) => <IconBase {...props}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></IconBase>;
-        const Utensils = (props) => <IconBase {...props}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></IconBase>;
-        const Bed = (props) => <IconBase {...props}><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></IconBase>;
-        const Coffee = (props) => <IconBase {...props}><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/></IconBase>;
-        const Plane = (props) => <IconBase {...props}><path d="M2 22h20"/><path d="M13 6h-3l-4 8h-2l3-10h7l5 14h-2.5l-3.5-12Z"/><path d="m15 17 2 5"/></IconBase>;
-        const Milk = (props) => <IconBase {...props}><path d="M8 2h8"/><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"/><path d="M7 15a6.472 6.472 0 0 1 5 0 6.47 6.47 0 0 0 5 0"/></IconBase>;
-        const Pill = (props) => <IconBase {...props}><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></IconBase>;
-        const Info = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></IconBase>;
-        const CheckCircle = (props) => <IconBase {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></IconBase>;
-        const Circle = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/></IconBase>;
-        const Droplet = (props) => <IconBase {...props}><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.74A17.16 17.16 0 0 0 12 2v0a17.16 17.16 0 0 0-7 7.26C3 11.1 2 13 2 15a7 7 0 0 0 10 7Z"/></IconBase>;
-        const Cookie = (props) => <IconBase {...props}><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 15.5v.01"/><path d="M12 12v.01"/><path d="M11 17v.01"/><path d="M7 14v.01"/></IconBase>;
-        const ShieldAlert = (props) => <IconBase {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="M12 8v4"/><path d="M12 16h.01"/></IconBase>;
-        const Repeat = (props) => <IconBase {...props}><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></IconBase>;
-        const Briefcase = (props) => <IconBase {...props}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></IconBase>;
-        const ListTodo = (props) => <IconBase {...props}><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></IconBase>;
-        const Clock = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>;
-        const Activity = (props) => <IconBase {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></IconBase>;
-        const AlertTriangle = (props) => <IconBase {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></IconBase>;
-        const Ban = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></IconBase>;
-        const Calendar = (props) => <IconBase {...props}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></IconBase>;
+        const Sunrise = (p) => <IconBase {...p}><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></IconBase>;
+        const Sun = (p) => <IconBase {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></IconBase>;
+        const Utensils = (p) => <IconBase {...p}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></IconBase>;
+        const Bed = (p) => <IconBase {...p}><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></IconBase>;
+        const Coffee = (p) => <IconBase {...p}><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/></IconBase>;
+        const Plane = (p) => <IconBase {...p}><path d="M2 22h20"/><path d="M13 6h-3l-4 8h-2l3-10h7l5 14h-2.5l-3.5-12Z"/><path d="m15 17 2 5"/></IconBase>;
+        const Milk = (p) => <IconBase {...p}><path d="M8 2h8"/><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"/><path d="M7 15a6.472 6.472 0 0 1 5 0 6.47 6.47 0 0 0 5 0"/></IconBase>;
+        const Pill = (p) => <IconBase {...p}><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></IconBase>;
+        const Info = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></IconBase>;
+        const CheckCircle = (p) => <IconBase {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></IconBase>;
+        const Circle = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/></IconBase>;
+        const Repeat = (p) => <IconBase {...p}><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></IconBase>;
+        const Briefcase = (p) => <IconBase {...p}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></IconBase>;
+        const ListTodo = (p) => <IconBase {...p}><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></IconBase>;
+        const Clock = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconBase>;
+        const Activity = (p) => <IconBase {...p}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></IconBase>;
+        const AlertTriangle = (p) => <IconBase {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></IconBase>;
+        const Ban = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></IconBase>;
+        const Calendar = (p) => <IconBase {...p}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></IconBase>;
+        const Cookie = (p) => <IconBase {...p}><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 15.5v.01"/><path d="M12 12v.01"/><path d="M11 17v.01"/><path d="M7 14v.01"/></IconBase>;
+        const Droplet = (p) => <IconBase {...p}><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.74A17.16 17.16 0 0 0 12 2v0a17.16 17.16 0 0 0-7 7.26C3 11.1 2 13 2 15a7 7 0 0 0 10 7Z"/></IconBase>;
+        const ShieldAlert = (p) => <IconBase {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="M12 8v4"/><path d="M12 16h.01"/></IconBase>;
 
-        // --- MAIN APP COMPONENT ---
+        // --- MAIN APP ---
         const SupplementApp = () => {
             const [activeTab, setActiveTab] = useState('two-meals');
             const [threeMealMode, setThreeMealMode] = useState('standard'); 
@@ -84,7 +97,7 @@
             const [showResetModal, setShowResetModal] = useState(false);
             const [showPackingResetModal, setShowPackingResetModal] = useState(false);
 
-            // Packing List Data
+            // Data Definitions
             const packingConfig = {
                 '13': { label: '13天團 (11份)', multiplier: 11, mct: 10 },
                 '11': { label: '11天團 (9份)', multiplier: 9, mct: 4 },
@@ -106,1008 +119,355 @@
                 { id: 'p_calcium', name: '12. Mivolis Calcium 600 (鈣)', baseDose: 1, unit: '錠' },
             ];
 
-            // One Day Two Meals Schedule
             const scheduleDataTwoMeals = [
                 {
-                id: 'phase1',
-                title: '第一階段：起床空腹',
-                subtitle: '餐前 30 分鐘',
-                icon: <Sunrise className="w-6 h-6 text-orange-600" />, 
-                color: 'bg-orange-100', 
-                items: [
-                    { id: 'neocell', name: 'NeoCell Super Collagen', dose: '2 錠', desc: '皮膚與頭髮的地基', type: 'pill' },
-                    { id: 'nmn', name: 'bard NMN 30000', dose: '1 顆', desc: '喚醒細胞與體力', type: 'pill' }
-                ]
-                },
-                {
-                id: 'phase2',
-                title: '第二階段：第一餐 (早午餐)',
-                subtitle: '啟動代謝・提神・油類',
-                note: '胃口較好時攝取，適合吞嚥大顆膠囊',
-                icon: <Sun className="w-6 h-6 text-amber-600" />,
-                color: 'bg-amber-100',
-                subSections: [
-                    {
-                    title: '飯前先吃 (丸類/粉類)',
+                    id: 'phase1', title: '第一階段：起床空腹', subtitle: '餐前 30 分鐘',
+                    icon: <Sunrise className="w-7 h-7 text-orange-600" />, color: 'bg-orange-100', 
                     items: [
-                        { id: 'profaes4', name: 'ProFaes4 益生菌', dose: '1 顆', desc: '隨餐第一口吃，助消化、減少脹氣', type: 'pill' },
-                        { id: 'bkomplex', name: 'Mivolis B-Komplex (B群)', dose: '1 顆', desc: '提供工作所需能量', type: 'pill' },
-                        { id: 'beauty', name: 'Mivolis 美容配方 (Haut...)', dose: '1 錠', desc: '含鋅與Q10，白天吸收好', type: 'pill' }
+                        { id: 'neocell', name: 'NeoCell Super Collagen', dose: '2 錠', desc: '皮膚與頭髮的地基', type: 'pill' },
+                        { id: 'nmn', name: 'bard NMN 30000', dose: '1 顆', desc: '喚醒細胞與體力', type: 'pill' }
                     ]
-                    },
-                    {
-                    title: '飯中或飯後吞 (油類)',
+                },
+                {
+                    id: 'phase2', title: '第二階段：第一餐 (早午餐)', subtitle: '啟動代謝・提神・油類',
+                    icon: <Sun className="w-7 h-7 text-amber-600" />, color: 'bg-amber-100',
+                    subSections: [
+                        {
+                            title: '飯前先吃 (丸類/粉類)',
+                            items: [
+                                { id: 'profaes4', name: 'ProFaes4 益生菌', dose: '1 顆', desc: '隨餐助消化、減少脹氣', type: 'pill' },
+                                { id: 'bkomplex', name: 'Mivolis B-Komplex (B群)', dose: '1 顆', desc: '提供工作所需能量', type: 'pill' },
+                                { id: 'beauty', name: 'Mivolis 美容配方 (Haut...)', dose: '1 錠', desc: '含鋅與Q10，白天吸收好', type: 'pill' }
+                            ]
+                        },
+                        {
+                            title: '飯中或飯後吞 (油類)',
+                            items: [
+                                { id: 'seal_oil', name: 'BioSunn Selolje 海豹油', dose: '1 顆', desc: '油類請在白天消化，防逆流', type: 'oil' }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'phase3', title: '第三階段：第二餐 (晚餐)', subtitle: '抗氧化・修復・避免油膩',
+                    prePhaseEvents: [
+                        { title: '快樂下午茶－果果能量【乳清蛋白飲】', note: '午餐後2小時 / 慢慢喝 20-30 分鐘', icon: <Coffee className="w-5 h-5 text-orange-600" />, colorTheme: 'orange' },
+                        { title: '飢餓法寶－果果能量【蛋白威化酥】', note: '晚餐前1.5小時 / 搭配 300cc 水', icon: <Cookie className="w-5 h-5 text-orange-900" />, colorTheme: 'chestnut' }
+                    ],
+                    icon: <Utensils className="w-7 h-7 text-sky-600" />, color: 'bg-sky-100',
                     items: [
-                        { id: 'seal_oil', name: 'BioSunn Selolje 海豹油', dose: '1 顆', desc: 'Mounjaro 防胃食道逆流：油類請在白天消化', type: 'oil' }
+                        { id: 'vitc', name: 'Mivolis Vitamin C', dose: '1 顆', desc: '緩釋型，夜間抗氧化修復', type: 'pill' },
+                        { id: 'blueberry', name: 'Nordmea Blåbær 藍莓', dose: '1 顆', desc: '舒緩整天用眼疲勞', type: 'pill' },
+                        { id: 'cartilage', name: 'BioSunn Haibrusk 軟骨', dose: '2 顆', desc: '夜間修復關節軟骨', type: 'pill' }
                     ]
-                    }
-                ]
                 },
                 {
-                id: 'phase3',
-                title: '第三階段：第二餐 (晚餐)',
-                subtitle: '抗氧化・修復・避免油膩',
-                prePhaseEvents: [
-                    {
-                    title: '快樂下午茶－果果能量【乳清蛋白飲】（午餐後２小時）',
-                    icon: <Coffee className="w-5 h-5 text-orange-600" />, 
-                    note: '建議沖泡 350cc - 400cc 的水／花 20-30 分鐘 慢慢喝完',
-                    colorTheme: 'orange'
-                    },
-                    {
-                    title: '飢餓法寶－果果能量【蛋白威化酥】（晚餐前1.5小時）',
-                    icon: <Cookie className="w-5 h-5 text-orange-900" />,
-                    note: '建議搭配 350cc - 400cc 的水／花 20-30 分鐘 慢慢吃完',
-                    colorTheme: 'chestnut'
-                    }
-                ],
-                icon: <Utensils className="w-6 h-6 text-sky-600" />,
-                color: 'bg-sky-100',
-                items: [
-                    { id: 'vitc', name: 'Mivolis Vitamin C', dose: '1 顆', desc: '緩釋型，延續夜間抗氧化修復', type: 'pill' },
-                    { id: 'blueberry', name: 'Nordmea Blåbær 藍莓', dose: '1 顆', desc: '舒緩整天用眼疲勞', type: 'pill' },
-                    { id: 'cartilage', name: 'BioSunn Haibrusk 軟骨', dose: '2 顆', desc: '含銅與軟骨素 (與早上的鋅錯開)', type: 'pill' }
-                ]
-                },
-                {
-                id: 'phase4',
-                title: '第四階段：睡前 (⏰３０－６０分鐘)',
-                subtitle: '解決便秘與睡眠問題',
-                prePhaseEvents: [
-                    {
-                    title: '💡 黃金時間：晚餐至睡前至少間隔 2 小時',
-                    colorTheme: 'amber'
-                    }
-                ],
-                icon: <Bed className="w-6 h-6 text-indigo-600" />,
-                color: 'bg-indigo-100',
-                items: [
-                    { id: 'magnesium', name: 'Mivolis Magnesium 500 鎂', dose: '1 錠', desc: '關鍵！幫助排便與放鬆肌肉', type: 'pill' },
-                    { id: 'calcium', name: 'Mivolis Calcium 600 鈣', dose: '1 錠', desc: '補骨並穩定神經', type: 'pill' },
-                    { id: 'neocell_night', name: 'NeoCell Super Collagen', dose: '1 錠', desc: '分次吸收效果更佳', type: 'pill' }
-                ]
+                    id: 'phase4', title: '第四階段：睡前 (⏰30-60分鐘)', subtitle: '解決便秘與睡眠問題',
+                    prePhaseEvents: [{ title: '💡 黃金時間：晚餐至睡前至少間隔 2 小時', colorTheme: 'amber' }],
+                    icon: <Bed className="w-7 h-7 text-indigo-600" />, color: 'bg-indigo-100',
+                    items: [
+                        { id: 'magnesium', name: 'Mivolis Magnesium 500 鎂', dose: '1 錠', desc: '關鍵！幫助排便與放鬆肌肉', type: 'pill' },
+                        { id: 'calcium', name: 'Mivolis Calcium 600 鈣', dose: '1 錠', desc: '補骨並穩定神經', type: 'pill' },
+                        { id: 'neocell_night', name: 'NeoCell Super Collagen', dose: '1 錠', desc: '分次吸收效果更佳', type: 'pill' }
+                    ]
                 }
             ];
 
-            // One Day Three Meals Schedule
             const getScheduleThreeMeals = (mode) => {
-                const isGapMode = mode === 'gap';
-                
+                const isGap = mode === 'gap';
                 return [
-                {
-                    id: 'tm_phase1',
-                    title: '1. 起床空腹 (早餐前 30 分鐘)',
-                    subtitle: '防皮鬆關鍵・吸收最佳',
-                    icon: <Sunrise className="w-5 h-5 text-orange-600" />,
-                    color: 'bg-orange-100',
-                    items: [
-                    { id: 'tm_neocell', name: 'NeoCell Super Collagen', dose: '2 錠', desc: '防皮鬆最關鍵，空腹吸收最佳', type: 'pill' },
-                    { id: 'tm_nmn', name: 'bard NMN 30000', dose: '1 顆', desc: '喚醒細胞，補充體力', type: 'pill' }
-                    ]
-                },
-                {
-                    id: 'tm_phase2',
-                    title: '2. 早餐 (啟動代謝)',
-                    subtitle: isGapMode ? '空窗期重點：增加飽足感' : '預防脹氣・維持代謝',
-                    icon: <Coffee className="w-5 h-5 text-amber-600" />,
-                    color: 'bg-amber-100',
-                    items: [
-                    { id: 'tm_profaes4', name: 'ProFaes4 益生菌', dose: '1 顆', desc: '隨餐第一口吃，預防整天的脹氣與便秘', type: 'pill' },
-                    { id: 'tm_bkomplex', name: 'Mivolis B-Komplex (B群)', dose: '1 顆', desc: '提神、維持基礎代謝，白天吃避免失眠', type: 'pill' },
-                    { id: 'tm_ampk', name: 'Life Extension AMPK', dose: '1 錠', desc: '燃燒腹部脂肪，配合藥物效果佳', type: 'pill' },
-                    ...(isGapMode ? [{ 
-                        id: 'tm_mct', 
-                        name: "Nature's Truth MCT Oil", 
-                        dose: '1 顆', 
-                        desc: '★ 空窗期加強：增加飽足感，撐過早上飢餓感', 
-                        type: 'oil',
-                        highlight: true 
-                    }] : [])
-                    ]
-                },
-                {
-                    id: 'tm_phase3',
-                    title: '3. 午餐 (油脂消化+養顏)',
-                    subtitle: '護胃・護眼',
-                    icon: <Sun className="w-5 h-5 text-yellow-600" />,
-                    color: 'bg-yellow-100',
-                    items: [
-                    { id: 'tm_beauty', name: 'Mivolis 美容配方 (Haut+)', dose: '1 錠', desc: '含鋅、Q10，隨餐吃護胃不噁心', type: 'pill' },
-                    { id: 'tm_seal', name: 'BioSunn Selolje (海豹油)', dose: '1 顆', desc: '油類午餐消化最好，避免夜間胃食道逆流', type: 'oil' },
-                    { id: 'tm_blueberry', name: 'Nordmea Blåbær (藍莓)', dose: '1 顆', desc: '護眼、抗氧化', type: 'pill' },
-                    ...(isGapMode ? [{ 
-                        id: 'tm_mct_lunch', 
-                        name: "Nature's Truth MCT Oil", 
-                        dose: '1 顆', 
-                        desc: '★ 空窗期加強：延續飽足感至下午', 
-                        type: 'oil',
-                        highlight: true 
-                    }] : [])
-                    ]
-                },
-                {
-                    id: 'tm_phase4',
-                    title: '4. 晚餐 (修復+抗氧化)',
-                    subtitle: '夜間修復・關節保養',
-                    prePhaseEvents: [
-                    {
-                        title: '快樂下午茶－果果能量【乳清蛋白飲】（午餐後２小時）',
-                        icon: <Coffee className="w-4 h-4 text-orange-600" />,
-                        note: '建議沖泡 350cc - 400cc 的水／花 20-30 分鐘 慢慢喝完',
-                        colorTheme: 'orange'
-                    },
-                    {
-                        title: '飢餓法寶－果果能量【蛋白威化酥】（晚餐前1.5小時）',
-                        icon: <Cookie className="w-4 h-4 text-orange-900" />, // Updated to chestnut theme
-                        note: '建議搭配 350cc - 400cc 的水／花 20-30 分鐘 慢慢吃完',
-                        colorTheme: 'chestnut' // Updated to chestnut theme
-                    }
-                    ],
-                    icon: <Utensils className="w-5 h-5 text-sky-600" />,
-                    color: 'bg-sky-100',
-                    note: isGapMode ? '⚠️ 空窗期調整：晚餐澱粉請減半，避免脂肪堆積' : null,
-                    noteType: isGapMode ? 'warning' : null,
-                    items: [
-                    { id: 'tm_vitc', name: 'Mivolis Vitamin C', dose: '1 顆', desc: '幫助軟骨與膠原蛋白合成，夜間抗氧化', type: 'pill' },
-                    { id: 'tm_cartilage', name: 'BioSunn Haibrusk (鯊魚軟骨)', dose: '2 顆', desc: '夜間修復關節軟骨，預防運動損傷', type: 'pill' }
-                    ]
-                },
-                {
-                    id: 'tm_phase5',
-                    title: '5. 睡前 (⏰３０－６０分鐘)',
-                    subtitle: '解決便秘・放鬆助眠',
-                    prePhaseEvents: [
-                    {
-                        title: '💡 黃金時間：晚餐至睡前至少間隔 2 小時',
-                        colorTheme: 'amber'
-                    }
-                    ],
-                    icon: <Bed className="w-5 h-5 text-indigo-600" />,
-                    color: 'bg-indigo-100',
-                    items: [
-                    { id: 'tm_magnesium', name: 'Mivolis Magnesium 500 (鎂)', dose: '1 錠', desc: '關鍵！解決便秘、放鬆肌肉、助眠', type: 'pill' },
-                    { id: 'tm_calcium', name: 'Mivolis Calcium 600 (鈣)', dose: '1 錠', desc: '補鈣，與鎂一起穩定神經', type: 'pill' },
-                    { id: 'tm_neocell_night', name: 'NeoCell Super Collagen', dose: '1 錠', desc: '分次吸收，夜間修復', type: 'pill' }
-                    ]
-                }
+                    { id: 't1', title: '1. 起床空腹', subtitle: '防皮鬆關鍵', icon: <Sunrise className="w-7 h-7 text-orange-600" />, color: 'bg-orange-100',
+                      items: [{ id: 'tm_neocell', name: 'NeoCell Super Collagen', dose: '2 錠', desc: '空腹吸收最佳', type: 'pill' }] },
+                    { id: 't2', title: '2. 早餐', subtitle: '預防脹氣', icon: <Coffee className="w-7 h-7 text-amber-600" />, color: 'bg-amber-100',
+                      items: [
+                          { id: 'tm_profaes', name: 'ProFaes4 益生菌', dose: '1 顆', desc: '預防整天脹氣', type: 'pill' },
+                          isGap ? { id: 'tm_mct1', name: "Nature's Truth MCT Oil", dose: '1 顆', desc: '★ 空窗期：增加飽足感', type: 'oil', highlight: true } : null
+                      ].filter(Boolean) },
+                    { id: 't3', title: '3. 午餐', subtitle: '油脂消化', icon: <Sun className="w-7 h-7 text-yellow-600" />, color: 'bg-yellow-100',
+                      items: [
+                          { id: 'tm_seal', name: 'BioSunn Selolje (海豹油)', dose: '1 顆', desc: '中午消化最好', type: 'oil' },
+                          isGap ? { id: 'tm_mct2', name: "Nature's Truth MCT Oil", dose: '1 顆', desc: '★ 延續飽足感', type: 'oil', highlight: true } : null
+                      ].filter(Boolean) }
                 ];
             };
 
-            // Alternatives Data
             const alternativesData = [
-                {
-                category: '睡眠與排便',
-                icon: <Bed className="w-6 h-6 text-indigo-600" />,
-                color: 'bg-indigo-50',
-                primary: 'Mivolis Magnesium 500 (鎂)',
-                alt: 'Natrol 5-HTP',
-                note: '鎂能解便秘+助眠。若鎂吃完，改吃 5-HTP 維持睡眠。'
-                },
-                {
-                category: '能量與代謝',
-                icon: <Coffee className="w-6 h-6 text-amber-600" />,
-                color: 'bg-amber-50',
-                primary: 'Mivolis B-Komplex (B群)',
-                alt: "Nature's Truth MCT Oil",
-                note: <>打針期間 B 群優先。MCT 油易腹瀉，建議僅在 <strong className="text-orange-600">延後打針 (第 8-11 天)</strong> 時補充飽足感。</>
-                },
-                {
-                category: '免疫與鋅',
-                icon: <ShieldAlert className="w-6 h-6 text-rose-600" />,
-                color: 'bg-rose-50',
-                primary: 'Mivolis 美容配方 (Haut+)',
-                alt: 'Mivolis Zink (單方鋅)',
-                note: '美容配方含鋅不傷胃。單方鋅僅建議感冒時短期補充。'
-                },
-                {
-                category: '油脂/女性',
-                icon: <Droplet className="w-6 h-6 text-sky-600" />,
-                color: 'bg-sky-50',
-                primary: 'BioSunn 海豹油',
-                alt: '亞尼活力 琉璃苣油',
-                note: '海豹油代謝佳。琉璃苣油若造成打嗝有油味可暫停。'
-                }
+                { category: '睡眠與排便', icon: <Bed className="w-6 h-6 text-indigo-600" />, color: 'bg-indigo-50', primary: 'Mivolis Magnesium 500 (鎂)', alt: 'Natrol 5-HTP', note: '鎂能解便秘+助眠。' },
+                { category: '能量與代謝', icon: <Coffee className="w-6 h-6 text-amber-600" />, color: 'bg-amber-50', primary: 'Mivolis B-Komplex (B群)', alt: "Nature's Truth MCT Oil", note: '打針期間 B 群優先。' }
             ];
 
             const getEventStyles = (theme) => {
-                switch (theme) {
-                case 'orange':
-                    return {
-                    line: 'bg-orange-200/50 group-hover:bg-orange-300',
-                    capsule: 'bg-orange-50 border-orange-100 text-orange-700',
-                    note: 'text-orange-600'
-                    };
-                case 'chestnut':
-                    return {
-                    line: 'bg-orange-300/50 group-hover:bg-orange-400',
-                    capsule: 'bg-orange-100 border-orange-200 text-orange-900',
-                    note: 'text-orange-800'
-                    };
-                case 'stone':
-                    return {
-                    line: 'bg-stone-200/50 group-hover:bg-stone-300',
-                    capsule: 'bg-stone-50 border-stone-200 text-stone-700',
-                    note: 'text-stone-500'
-                    };
-                case 'amber':
-                default:
-                    return {
-                    line: 'bg-amber-200/50 group-hover:bg-amber-300',
-                    capsule: 'bg-amber-50 border-amber-100 text-amber-700',
-                    note: 'text-amber-600'
-                    };
-                }
+                const map = {
+                    orange: { line: 'bg-orange-200/50', cap: 'bg-orange-50 border-orange-100 text-orange-700', note: 'text-orange-600' },
+                    chestnut: { line: 'bg-orange-300/50', cap: 'bg-orange-100 border-orange-200 text-orange-900', note: 'text-orange-800' },
+                    amber: { line: 'bg-amber-200/50', cap: 'bg-amber-50 border-amber-100 text-amber-700', note: 'text-amber-600' }
+                };
+                return map[theme] || map.amber;
             };
-
-            const getCurrentScheduleData = () => {
-                if (activeTab === 'two-meals') return scheduleDataTwoMeals;
-                if (activeTab === 'three-meals') return getScheduleThreeMeals(threeMealMode);
-                return [];
-            };
-
-            const currentSchedule = getCurrentScheduleData();
-
-            const calculateTotalItems = () => {
-                let count = 0;
-                currentSchedule.forEach(phase => {
-                if (phase.items) count += phase.items.length;
-                if (phase.subSections) {
-                    phase.subSections.forEach(sub => count += sub.items.length);
-                }
-                });
-                return count;
-            };
-
-            const totalItems = calculateTotalItems();
 
             useEffect(() => {
-                const savedChecks = localStorage.getItem('mounjaro_daily_checks');
-                const savedPacked = localStorage.getItem('mounjaro_packing_checks');
-                const savedDate = localStorage.getItem('mounjaro_check_date');
+                const savedChecks = localStorage.getItem('angel_checks');
+                const savedPacked = localStorage.getItem('angel_packed');
                 const today = new Date().toDateString();
-
-                if (savedChecks && savedDate === today) {
-                setCheckedItems(JSON.parse(savedChecks));
-                } else {
-                setCheckedItems({});
-                localStorage.setItem('mounjaro_check_date', today);
-                }
-
-                if (savedPacked) {
-                setPackedItems(JSON.parse(savedPacked));
-                }
+                const savedDate = localStorage.getItem('angel_date');
+                if (savedChecks && savedDate === today) setCheckedItems(JSON.parse(savedChecks));
+                else { setCheckedItems({}); localStorage.setItem('angel_date', today); }
+                if (savedPacked) setPackedItems(JSON.parse(savedPacked));
             }, []);
 
             useEffect(() => {
-                const currentIds = new Set();
-                currentSchedule.forEach(phase => {
-                if (phase.items) phase.items.forEach(i => currentIds.add(i.id));
-                if (phase.subSections) phase.subSections.forEach(sub => sub.items.forEach(i => currentIds.add(i.id)));
-                });
-
-                const checkedCount = Object.keys(checkedItems).filter(id => checkedItems[id] && currentIds.has(id)).length;
-                const percentage = totalItems > 0 ? Math.round((checkedCount / totalItems) * 100) : 0;
+                localStorage.setItem('angel_checks', JSON.stringify(checkedItems));
+                localStorage.setItem('angel_packed', JSON.stringify(packedItems));
                 
-                setProgress(percentage);
-                localStorage.setItem('mounjaro_daily_checks', JSON.stringify(checkedItems));
-            }, [checkedItems, totalItems, activeTab, threeMealMode]);
+                // 簡單計算進度，分母暫定為 10
+                const checked = Object.values(checkedItems).filter(Boolean).length;
+                setProgress(Math.min(100, Math.round((checked / 10) * 100)));
+            }, [checkedItems, packedItems]);
 
-            useEffect(() => {
-                localStorage.setItem('mounjaro_packing_checks', JSON.stringify(packedItems));
-            }, [packedItems]);
-
-            const toggleCheck = (id) => {
-                setCheckedItems(prev => ({
-                ...prev,
-                [id]: !prev[id]
-                }));
-            };
-
-            const togglePackingCheck = (id) => {
-                setPackedItems(prev => ({
-                ...prev,
-                [id]: !prev[id]
-                }));
-            };
-
-            const handleResetClick = () => {
-                setShowResetModal(true);
-            };
-
-            const handlePackingResetClick = () => {
-                setShowPackingResetModal(true);
-            }
-
-            const confirmReset = () => {
-                setCheckedItems({});
-                setProgress(0);
-                setShowResetModal(false);
-                localStorage.setItem('mounjaro_daily_checks', JSON.stringify({}));
-            };
-
-            const confirmPackingReset = () => {
-                setPackedItems({});
-                setShowPackingResetModal(false);
-                localStorage.setItem('mounjaro_packing_checks', JSON.stringify({}));
-            };
+            const confirmReset = () => { setCheckedItems({}); setProgress(0); setShowResetModal(false); };
+            const confirmPackingReset = () => { setPackedItems({}); setShowPackingResetModal(false); };
+            
+            // 補上缺失的 Handlers
+            const handleResetClick = () => setShowResetModal(true);
+            const handlePackingResetClick = () => setShowPackingResetModal(true);
 
             const SupplementCard = ({ item }) => {
                 const isChecked = checkedItems[item.id];
-                const isTwoMeals = activeTab === 'two-meals';
-                
                 return (
-                <div 
-                    onClick={() => toggleCheck(item.id)}
-                    className={`relative p-3 mb-2 rounded-3xl border transition-all duration-300 cursor-pointer flex items-start gap-3
-                    ${isChecked 
-                        ? 'bg-teal-50/80 border-teal-200/60 shadow-none' 
-                        : item.highlight 
-                        ? 'bg-amber-50 border-amber-200 shadow-sm ring-1 ring-amber-100/50' 
-                        : 'bg-white border-slate-100 hover:border-teal-200 shadow-sm hover:shadow-md'}`}
-                >
-                    <div className={`mt-1 transition-all duration-300 transform ${isChecked ? 'scale-110' : 'scale-100'}`}>
-                    {isChecked 
-                        ? <CheckCircle className="w-6 h-6 fill-teal-500 text-white" /> 
-                        : <Circle className="w-6 h-6 text-slate-300" />}
+                    <div onClick={() => setCheckedItems(p => ({...p, [item.id]: !p[item.id]}))}
+                          className={`relative p-3 mb-2 rounded-3xl border transition-all cursor-pointer flex items-start gap-3 
+                          ${isChecked ? 'bg-teal-50/80 border-teal-200/60' : item.highlight ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100 shadow-sm'}`}>
+                        <div className="mt-1">{isChecked ? <CheckCircle className="w-6 h-6 fill-teal-500 text-white" /> : <Circle className="w-6 h-6 text-slate-300" />}</div>
+                        <div className="flex-1">
+                            <div className="flex justify-between items-start">
+                                <h3 className={`font-bold text-xl leading-tight ${isChecked ? 'text-teal-800 opacity-60 line-through' : 'text-slate-700'}`}>{item.name}</h3>
+                                <span className="font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-sm">{item.dose}</span>
+                            </div>
+                            <p className={`font-medium mt-0.5 text-base ${isChecked ? 'text-teal-700 opacity-60' : 'text-slate-500'}`}>{item.desc}</p>
+                        </div>
                     </div>
-                    
-                    <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                        <h3 className={`font-bold leading-tight tracking-normal transition-colors duration-300 text-xl sm:text-2xl
-                        ${isChecked ? 'text-teal-800 line-through opacity-60' : 'text-slate-700'}`}>
-                        {item.name}
-                        </h3>
-                        <span className={`font-bold px-2 py-0.5 rounded-full whitespace-nowrap ml-1.5 transition-colors duration-300 tracking-wide text-sm
-                        ${isChecked ? 'bg-teal-100 text-teal-700 opacity-60' : 'bg-slate-100 text-slate-600'}`}>
-                        {item.dose}
-                        </span>
-                    </div>
-                    <p className={`font-medium mt-0.5 leading-snug transition-colors duration-300 text-base
-                        ${isChecked ? 'text-teal-700 opacity-60' : 'text-slate-500'}`}>
-                        {item.desc}
-                    </p>
-                    
-                    {/* Icon indicator */}
-                    <div className="absolute top-3 right-3 opacity-5">
-                        {item.type === 'oil' ? <Droplet className="w-8 h-8" /> : <Pill className="w-8 h-8" />}
-                    </div>
-                    </div>
-                </div>
                 );
             };
 
             return (
-                <div className="min-h-screen bg-slate-50 text-slate-800 font-rounded pb-24">
-                {/* Header */}
-                <div className="bg-white sticky top-0 z-50 shadow-sm/50 border-b border-slate-100 backdrop-blur-md bg-white/95">
-                    <div className="max-w-md mx-auto px-5 py-4">
-                    <div className="flex justify-between items-end mb-3">
-                        <div>
-                        <h1 className="text-2xl font-extrabold text-slate-800 tracking-wide">
-                            Angel <span className="font-medium text-xl text-slate-600">的健康秘書</span>
-                        </h1>
-                        <p className="text-[10px] font-bold text-slate-400 mt-1 tracking-[0.2em] uppercase">
-                            {new Date().toLocaleDateString('zh-TW', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
-                        </div>
-                        <div className="text-right">
-                        <div className="text-3xl font-black text-teal-500 leading-none">{progress}%</div>
-                        <div className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.15em] mt-1">Daily Goal</div>
-                        </div>
-                    </div>
-                    
-                    <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                        <div 
-                        className="h-full bg-gradient-to-r from-teal-300 to-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.5)] transition-all duration-700 ease-out rounded-full"
-                        style={{ width: `${progress}%` }}
-                        />
-                    </div>
-                </div>
-
-                <div className="px-5 pb-4 pt-1">
-                    <div className="grid grid-cols-4 gap-1 p-1.5 bg-slate-100/80 rounded-3xl w-full">
-                        <button 
-                        onClick={() => setActiveTab('two-meals')}
-                        className={`py-2 sm:py-3 text-xs sm:text-sm font-bold tracking-wide rounded-2xl transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1
-                            ${activeTab === 'two-meals' 
-                            ? 'bg-white text-teal-600 shadow-sm ring-1 ring-black/5 scale-[1.02]' 
-                            : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'}`}
-                        >
-                        <Coffee className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                        <span className="truncate text-center w-full">一日兩餐</span>
-                        </button>
-                        <button 
-                        onClick={() => setActiveTab('three-meals')}
-                        className={`py-2 sm:py-3 text-xs sm:text-sm font-bold tracking-wide rounded-2xl transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1
-                            ${activeTab === 'three-meals' 
-                            ? 'bg-white text-teal-600 shadow-sm ring-1 ring-black/5 scale-[1.02]' 
-                            : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'}`}
-                        >
-                        <Plane className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                        <span className="truncate text-center w-full">出團版</span>
-                        </button>
-                        <button 
-                        onClick={() => setActiveTab('protein')}
-                        className={`py-2 sm:py-3 text-xs sm:text-sm font-bold tracking-wide rounded-2xl transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1
-                            ${activeTab === 'protein' 
-                            ? 'bg-white text-teal-600 shadow-sm ring-1 ring-black/5 scale-[1.02]' 
-                            : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'}`}
-                        >
-                        <Milk className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                        <span className="text-center leading-tight w-full">高蛋白<br className="sm:hidden" />補充品</span>
-                        </button>
-                        <button 
-                        onClick={() => setActiveTab('alternatives')}
-                        className={`py-2 sm:py-3 text-xs sm:text-sm font-bold tracking-wide rounded-2xl transition-all duration-300 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1
-                            ${activeTab === 'alternatives' 
-                            ? 'bg-white text-teal-600 shadow-sm ring-1 ring-black/5 scale-[1.02]' 
-                            : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'}`}
-                        >
-                        <Pill className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                        <span className="text-center leading-tight w-full">替代<br className="sm:hidden" />方案</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div className="max-w-md mx-auto p-5 space-y-8 animate-fade-in-up">
-                
-                {/* ONE DAY TWO MEALS */}
-                {activeTab === 'two-meals' && (
-                    <div className="animate-fade-in">
-                        <div className="bg-gradient-to-br from-teal-50 to-white border border-teal-100/50 rounded-3xl p-5 flex gap-3 shadow-sm mb-6">
-                        <div className="bg-teal-100 p-2 rounded-full h-fit shrink-0">
-                            <Info className="w-5 h-5 text-teal-600" />
-                        </div>
-                        <div>
-                            <strong className="text-teal-800 text-base block mb-1">Mounjaro 使用者提示</strong>
-                            <ul className="list-disc pl-4 space-y-1 text-sm text-teal-700/80 leading-relaxed font-medium">
-                            <li>海豹油等油類請在白天攝取，避免夜間胃酸倒流。</li>
-                            <li>睡前鎂非常重要，有助於緩解藥物引起的便秘。</li>
-                            </ul>
-                        </div>
-                        </div>
-
-                        {currentSchedule.map((phase) => (
-                        <React.Fragment key={phase.id}>
-                            {phase.prePhaseEvents && phase.prePhaseEvents.map((event, idx) => {
-                            const styles = getEventStyles(event.colorTheme);
-                            return (
-                                <div key={idx} className="flex items-center justify-center gap-3 my-6 group">
-                                <div className={`h-px flex-1 transition-colors ${styles.line}`}></div>
-                                
-                                <div className={`flex flex-col items-center px-6 py-3 rounded-3xl border shadow-sm transition-all group-hover:shadow-md ${styles.capsule}`}>
-                                    
-                                    <div className="flex items-center gap-1.5">
-                                        {event.icon}
-                                        <span className="text-base font-bold tracking-wide">{event.title}</span>
-                                    </div>
-
-                                    {event.note && (
-                                        <span className={`text-sm font-medium mt-1 opacity-90 ${styles.note}`}>
-                                        {event.note}
-                                        </span>
-                                    )}
-                                </div>
-                                
-                                <div className={`h-px flex-1 transition-colors ${styles.line}`}></div>
-                                </div>
-                            );
-                            })}
-
-                            <div className="mb-5">
-                            <div className="flex items-center gap-3 mb-3 pl-1">
-                                <div className={`p-3 rounded-2xl shadow-sm ${phase.color}`}>
-                                {phase.icon}
-                                </div>
+                <div className="min-h-screen bg-slate-50 text-slate-800 font-rounded pb-24 relative">
+                    {/* Header */}
+                    <div className="bg-white sticky top-0 z-40 shadow-sm border-b border-slate-100 backdrop-blur-md bg-white/95">
+                        <div className="max-w-md mx-auto px-5 py-4">
+                            <div className="flex justify-between items-end mb-3">
                                 <div>
-                                <h2 className="font-bold text-xl text-slate-700 tracking-wide">{phase.title}</h2>
-                                <p className="text-sm text-slate-500 font-medium tracking-wide">{phase.subtitle}</p>
+                                    <h1 className="text-2xl font-extrabold text-slate-800 tracking-wide">Angel <span className="font-medium text-xl text-slate-600">的健康秘書</span></h1>
+                                    <p className="text-[10px] font-bold text-slate-400 mt-1 tracking-[0.2em] uppercase">{new Date().toLocaleDateString('zh-TW', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-3xl font-black text-teal-500 leading-none">{progress}%</div>
+                                    <div className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.15em] mt-1">Goal</div>
                                 </div>
                             </div>
-
-                            {phase.note && (
-                                <div className="bg-amber-50 text-amber-700 text-sm px-4 py-3 rounded-2xl mb-4 border border-amber-100/50 font-medium flex gap-2 items-center">
-                                <span className="text-amber-500 text-lg">💡</span> {phase.note}
-                                </div>
-                            )}
-
-                            {phase.items && phase.items.map(item => (
-                                <SupplementCard key={item.id} item={item} />
-                            ))}
-
-                            {phase.subSections && phase.subSections.map((sub, idx) => (
-                                <div key={idx} className="mt-5 pl-5 border-l-2 border-slate-100 ml-3">
-                                <h3 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                                    {sub.title}
-                                </h3>
-                                <div className="space-y-3">
-                                    {sub.items.map(item => (
-                                    <SupplementCard key={item.id} item={item} />
-                                    ))}
-                                </div>
-                                </div>
-                            ))}
+                            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                <div className="h-full bg-gradient-to-r from-teal-300 to-teal-500 progress-glow transition-all duration-700" style={{ width: `${progress}%` }} />
                             </div>
-                        </React.Fragment>
-                        ))}
-                        
-                        <button 
-                        onClick={handleResetClick}
-                        className="w-full py-4 text-slate-400 text-sm font-medium hover:text-rose-500 transition-colors mt-8 flex items-center justify-center gap-2 hover:bg-rose-50 rounded-3xl group"
-                        >
-                        <Repeat className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" /> 重置今日紀錄
-                        </button>
-                    </div>
-                )}
-
-                {/* ONE DAY THREE MEALS */}
-                {activeTab === 'three-meals' && (
-                    <div className="animate-fade-in">
-                        <div className="flex gap-4 mb-6 justify-center">
-                        <button 
-                            onClick={() => setTourSubTab('schedule')}
-                            className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all border-2
-                            ${tourSubTab === 'schedule' 
-                                ? 'bg-teal-500 text-white border-teal-500 shadow-md' 
-                                : 'bg-white text-slate-400 border-slate-200 hover:border-teal-200'}`}
-                        >
-                            每日行程
-                        </button>
-                        <button 
-                            onClick={() => setTourSubTab('packing')}
-                            className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all border-2 flex items-center gap-2
-                            ${tourSubTab === 'packing' 
-                                ? 'bg-teal-500 text-white border-teal-500 shadow-md' 
-                                : 'bg-white text-slate-400 border-slate-200 hover:border-teal-200'}`}
-                        >
-                            <Briefcase className="w-4 h-4" />
-                            行李打包
-                        </button>
                         </div>
 
-                        {tourSubTab === 'packing' && (
-                        <div className="animate-fade-in-up">
-                            <div className="flex gap-2 p-1.5 bg-slate-200/50 rounded-2xl mb-6 border border-slate-100">
-                                {['13', '11', '10'].map(d => (
-                                <button
-                                    key={d}
-                                    onClick={() => setPackingDuration(d)}
-                                    className={`flex-1 py-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300
-                                    ${packingDuration === d 
-                                        ? 'bg-white text-teal-700 shadow-sm ring-1 ring-teal-500/20' 
-                                        : 'text-slate-500 hover:text-slate-700'}`}
-                                >
-                                    {packingConfig[d].label}
-                                </button>
-                                ))}
-                            </div>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between mb-2 px-1">
-                                <h3 className="font-bold text-slate-700 flex items-center gap-2 text-lg">
-                                    <ListTodo className="w-5 h-5 text-teal-500" /> 
-                                    打包清單
-                                </h3>
-                                <span className="text-sm font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">
-                                    倍數: {packingConfig[packingDuration].multiplier}x
-                                </span>
-                                </div>
-
-                                {packingListItems.map((item) => {
-                                const isPacked = packedItems[item.id];
-                                const totalDose = item.baseDose * packingConfig[packingDuration].multiplier;
-                                
-                                return (
-                                    <div 
-                                    key={item.id}
-                                    onClick={() => togglePackingCheck(item.id)}
-                                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 cursor-pointer
-                                        ${isPacked 
-                                        ? 'bg-teal-50/50 border-teal-200/50' 
-                                        : 'bg-white border-slate-100 hover:border-teal-200 shadow-sm'}`}
-                                    >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`transition-all duration-300 ${isPacked ? 'text-teal-500 scale-110' : 'text-slate-300'}`}>
-                                            {isPacked ? <CheckCircle className="w-6 h-6 fill-teal-500 text-white" /> : <Circle className="w-6 h-6" />}
-                                        </div>
-                                        <span className={`font-bold text-base ${isPacked ? 'text-teal-800 line-through opacity-60' : 'text-slate-700'}`}>
-                                            {item.name}
-                                        </span>
-                                    </div>
-                                    <span className={`text-base font-black px-3 py-1 rounded-xl whitespace-nowrap
-                                        ${isPacked ? 'bg-teal-100 text-teal-600' : 'bg-slate-100 text-slate-600'}`}>
-                                        {totalDose} {item.unit}
-                                    </span>
-                                    </div>
-                                );
-                                })}
-
-                                <div className="mt-6 pt-4 border-t border-slate-100">
-                                <div className="flex items-center gap-2 mb-3 px-1 text-amber-600 font-bold text-sm uppercase tracking-wide">
-                                    <ShieldAlert className="w-4 h-4" /> 空窗期補充
-                                </div>
-                                
-                                <div 
-                                    onClick={() => togglePackingCheck('p_mct')}
-                                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 cursor-pointer
-                                        ${packedItems['p_mct']
-                                        ? 'bg-amber-50/50 border-amber-200/50' 
-                                        : 'bg-white border-slate-100 hover:border-amber-200 shadow-sm'}`}
-                                    >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`transition-all duration-300 ${packedItems['p_mct'] ? 'text-amber-500 scale-110' : 'text-slate-300'}`}>
-                                            {packedItems['p_mct'] ? <CheckCircle className="w-6 h-6 fill-amber-500 text-white" /> : <Circle className="w-6 h-6" />}
-                                        </div>
-                                        <span className={`font-bold text-base ${packedItems['p_mct'] ? 'text-amber-800 line-through opacity-60' : 'text-slate-700'}`}>
-                                            13. Nature's Truth MCT Oil
-                                        </span>
-                                    </div>
-                                    <span className={`text-base font-black px-3 py-1 rounded-xl whitespace-nowrap
-                                        ${packedItems['p_mct'] ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'}`}>
-                                        {packingConfig[packingDuration].mct} 顆
-                                    </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button 
-                                onClick={handlePackingResetClick}
-                                className="w-full py-4 text-slate-400 text-sm font-medium hover:text-rose-500 transition-colors mt-8 flex items-center justify-center gap-2 hover:bg-rose-50 rounded-3xl group"
-                            >
-                                <Repeat className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" /> 重置打包清單
-                            </button>
-                        </div>
-                        )}
-
-                        {tourSubTab === 'schedule' && (
-                        <>
-                        <div className="flex p-1.5 bg-slate-200/50 rounded-3xl mb-6 border border-slate-100">
-                            <button
-                            onClick={() => setThreeMealMode('standard')}
-                            className={`flex-1 py-3 text-xs sm:text-sm font-bold tracking-wide rounded-2xl transition-all duration-300 flex items-center justify-center gap-2
-                                ${threeMealMode === 'standard' 
-                                ? 'bg-white text-teal-600 shadow-sm ring-1 ring-black/5' 
-                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'}`}
-                            >
-                            <Calendar className="w-4 h-4" /> 第 1-7 天 (藥效期)
-                            </button>
-                            <button
-                            onClick={() => setThreeMealMode('gap')}
-                            className={`flex-1 py-3 text-xs sm:text-sm font-bold tracking-wide rounded-2xl transition-all duration-300 flex items-center justify-center gap-2
-                                ${threeMealMode === 'gap' 
-                                ? 'bg-orange-50 text-orange-600 shadow-sm ring-1 ring-orange-200' 
-                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'}`}
-                            >
-                            <ShieldAlert className="w-4 h-4" /> 第 8-12 天 (空窗期)
-                            </button>
-                        </div>
-
-                        <div className={`rounded-3xl p-5 mb-6 text-sm border shadow-sm
-                            ${threeMealMode === 'standard' 
-                            ? 'bg-teal-50/50 border-teal-100 text-teal-900' 
-                            : 'bg-orange-50/50 border-orange-100 text-orange-900'}`}>
-                            <h3 className="font-bold flex items-center gap-2 mb-2 text-base tracking-wide">
-                            {threeMealMode === 'standard' ? '📅 平日模式重點' : '🛡️ 空窗期/延後施打期重點'}
-                            </h3>
-                            <p className="opacity-80 text-sm leading-relaxed font-medium">
-                            {threeMealMode === 'standard' 
-                                ? '護胃、防吐、解決便秘、預防肌肉流失。' 
-                                : '增加飽足感、抑制食慾反撲。藥效退去時，需調整飲食策略。'}
-                            </p>
-                        </div>
-
-                        {currentSchedule.map((phase) => (
-                            <React.Fragment key={phase.id}>
-                            {phase.prePhaseEvents && phase.prePhaseEvents.map((event, idx) => {
-                                const styles = getEventStyles(event.colorTheme);
-                                return (
-                                <div key={idx} className="flex items-center justify-center gap-3 my-6 group">
-                                    <div className={`h-px flex-1 transition-colors ${styles.line}`}></div>
-                                    
-                                    <div className={`flex flex-col items-center px-6 py-3 rounded-3xl border shadow-sm transition-all group-hover:shadow-md ${styles.capsule}`}>
-                                        
-                                        <div className="flex items-center gap-1.5">
-                                            {event.icon}
-                                            <span className="text-base font-bold tracking-wide">{event.title}</span>
-                                        </div>
-
-                                        {event.note && (
-                                            <span className={`text-sm font-medium mt-1 opacity-90 ${styles.note}`}>
-                                            {event.note}
+                        {/* Tabs */}
+                        <div className="px-5 pb-4 pt-1">
+                            <div className="grid grid-cols-4 gap-1 p-1.5 bg-slate-100/80 rounded-3xl w-full">
+                                {['two-meals', 'three-meals', 'protein', 'alternatives'].map(tab => (
+                                    <button key={tab} onClick={() => setActiveTab(tab)}
+                                            className={`py-2 text-xs sm:text-sm font-bold rounded-2xl transition-all flex flex-col items-center justify-center px-1
+                                            ${activeTab === tab ? 'bg-white text-teal-600 shadow-sm ring-1 ring-black/5 scale-[1.02]' : 'text-slate-400'}`}>
+                                            {tab === 'two-meals' && <Coffee className="w-4 h-4 mb-1" />}
+                                            {tab === 'three-meals' && <Plane className="w-4 h-4 mb-1" />}
+                                            {tab === 'protein' && <Milk className="w-4 h-4 mb-1" />}
+                                            {tab === 'alternatives' && <Pill className="w-4 h-4 mb-1" />}
+                                            <span className="text-center leading-tight">
+                                                {tab === 'two-meals' && '一日兩餐'}
+                                                {tab === 'three-meals' && '出團版'}
+                                                {tab === 'protein' && '高蛋白'}
+                                                {tab === 'alternatives' && '替代方案'}
                                             </span>
-                                        )}
-                                    </div>
-                                    
-                                    <div className={`h-px flex-1 transition-colors ${styles.line}`}></div>
-                                </div>
-                                );
-                            })}
-
-                            <div className="mb-6">
-                                <div className="flex items-center gap-3 mb-4 pl-1">
-                                <div className={`p-3 rounded-2xl shadow-sm ${phase.color}`}>
-                                    {phase.icon}
-                                </div>
-                                <div>
-                                    <h2 className="font-bold text-xl text-slate-700 tracking-wide">{phase.title}</h2>
-                                    <p className="text-sm text-slate-500 font-medium tracking-wide">{phase.subtitle}</p>
-                                </div>
-                                </div>
-
-                                {phase.note && (
-                                <div className={`text-sm px-4 py-3 rounded-2xl mb-4 border font-bold flex gap-2 items-center
-                                    ${phase.noteType === 'warning' 
-                                    ? 'bg-rose-50 text-rose-700 border-rose-100' 
-                                    : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
-                                    <span>{phase.noteType !== 'warning' ? '💡' : '⚠️'}</span>
-                                    {phase.note}
-                                </div>
-                                )}
-
-                                {phase.items && phase.items.map(item => (
-                                <SupplementCard key={item.id} item={item} />
+                                    </button>
                                 ))}
                             </div>
-                            </React.Fragment>
-                        ))}
+                        </div>
+                    </div>
 
-                        <button 
-                            onClick={handleResetClick}
-                            className="w-full py-4 text-slate-400 text-sm font-medium hover:text-rose-500 transition-colors mt-8 flex items-center justify-center gap-2 hover:bg-rose-50 rounded-3xl group"
-                        >
-                            <Repeat className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" /> 重置今日紀錄
-                        </button>
-                        </>
+                    <div className="max-w-md mx-auto p-5 space-y-6">
+                        {/* Tab Contents */}
+                        {activeTab === 'two-meals' && (
+                            <div className="animate-fade-in">
+                                <div className="bg-gradient-to-br from-teal-50 to-white border border-teal-100/50 rounded-3xl p-5 flex gap-3 shadow-sm mb-6">
+                                    <Info className="w-6 h-6 text-teal-600 shrink-0" />
+                                    <div className="text-sm text-teal-700/80 font-medium">
+                                        <strong className="text-teal-800 text-base block mb-1">Mounjaro 提示</strong>
+                                        油類請在白天攝取，睡前鎂有助於排便。
+                                    </div>
+                                </div>
+                                {scheduleDataTwoMeals.map(phase => (
+                                    <div key={phase.id} className="mb-6">
+                                        {phase.prePhaseEvents && phase.prePhaseEvents.map((ev, i) => {
+                                            const s = getEventStyles(ev.colorTheme);
+                                            return (
+                                                <div key={i} className="flex items-center gap-3 my-4">
+                                                    <div className={`h-px flex-1 ${s.line}`} />
+                                                    <div className={`px-4 py-2 rounded-3xl border shadow-sm flex flex-col items-center ${s.cap}`}>
+                                                        <div className="flex items-center gap-1.5 font-bold text-base">{ev.icon} {ev.title}</div>
+                                                        <span className={`text-sm font-medium ${s.note}`}>{ev.note}</span>
+                                                    </div>
+                                                    <div className={`h-px flex-1 ${s.line}`} />
+                                                </div>
+                                            );
+                                        })}
+                                        <div className="flex items-center gap-3 mb-3"><div className={`p-2.5 rounded-2xl ${phase.color}`}>{phase.icon}</div>
+                                            <div><h2 className="font-bold text-xl text-slate-700">{phase.title}</h2><p className="text-sm text-slate-500">{phase.subtitle}</p></div>
+                                        </div>
+                                        {phase.items && phase.items.map(item => <SupplementCard key={item.id} item={item} />)}
+                                        {phase.subSections && phase.subSections.map((sub, i) => (
+                                            <div key={i} className="mt-4 pl-4 border-l-2 border-slate-100 ml-3">
+                                                <h3 className="text-sm font-bold text-slate-400 mb-2 uppercase">{sub.title}</h3>
+                                                {sub.items.map(it => <SupplementCard key={it.id} item={it} />)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                                <button onClick={handleResetClick} className="w-full py-4 text-slate-400 font-medium hover:text-rose-500 flex items-center justify-center gap-2 rounded-3xl"><Repeat className="w-4 h-4" /> 重置今日紀錄</button>
+                            </div>
+                        )}
+
+                        {activeTab === 'three-meals' && (
+                            <div className="animate-fade-in">
+                                <div className="flex gap-4 mb-6 justify-center">
+                                    <button onClick={() => setTourSubTab('schedule')} className={`px-5 py-2 rounded-full text-sm font-bold border-2 ${tourSubTab === 'schedule' ? 'bg-teal-500 text-white border-teal-500 shadow-md' : 'bg-white text-slate-400 border-slate-200'}`}>每日行程</button>
+                                    <button onClick={() => setTourSubTab('packing')} className={`px-5 py-2 rounded-full text-sm font-bold border-2 flex items-center gap-2 ${tourSubTab === 'packing' ? 'bg-teal-500 text-white border-teal-500 shadow-md' : 'bg-white text-slate-400 border-slate-200'}`}><Briefcase className="w-4 h-4" />行李打包</button>
+                                </div>
+                                {tourSubTab === 'packing' ? (
+                                    <div className="space-y-4">
+                                        <div className="flex gap-2 p-1.5 bg-slate-200/50 rounded-2xl border border-slate-100">
+                                            {['13', '11', '10'].map(d => <button key={d} onClick={() => setPackingDuration(d)} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${packingDuration === d ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500'}`}>{packingConfig[d].label}</button>)}
+                                        </div>
+                                        {packingListItems.map(it => (
+                                            <div key={it.id} onClick={() => setPackedItems(p => ({...p, [it.id]: !p[it.id]}))} className={`flex justify-between p-4 rounded-2xl border transition-all cursor-pointer ${packedItems[it.id] ? 'bg-teal-50/50 border-teal-200' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                                <div className="flex items-center gap-3">{packedItems[it.id] ? <CheckCircle className="w-5 h-5 fill-teal-500 text-white" /> : <Circle className="w-5 h-5 text-slate-300" />}<span className={`font-bold text-base ${packedItems[it.id] ? 'line-through opacity-60' : ''}`}>{it.name}</span></div>
+                                                <span className="text-base font-black px-3 py-1 rounded-xl bg-slate-100">{it.baseDose * packingConfig[packingDuration].multiplier} {it.unit}</span>
+                                            </div>
+                                        ))}
+                                        <div className="mt-6 pt-4 border-t border-slate-100">
+                                            <div className="text-amber-600 font-bold text-sm mb-3">13. Nature's Truth MCT Oil</div>
+                                            <div onClick={() => setPackedItems(p => ({...p, p_mct: !p.p_mct}))} className={`flex justify-between p-4 rounded-2xl border transition-all cursor-pointer ${packedItems.p_mct ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                                <div className="flex items-center gap-3">{packedItems.p_mct ? <CheckCircle className="w-5 h-5 fill-amber-500 text-white" /> : <Circle className="w-5 h-5 text-slate-300" />}<span className={`font-bold text-base ${packedItems.p_mct ? 'line-through opacity-60' : ''}`}>MCT Oil</span></div>
+                                                <span className="text-base font-black px-3 py-1 rounded-xl bg-amber-100">{packingConfig[packingDuration].mct} 顆</span>
+                                            </div>
+                                        </div>
+                                        <button onClick={handlePackingResetClick} className="w-full py-4 text-slate-400 font-medium hover:text-rose-500 flex items-center justify-center gap-2 rounded-3xl"><Repeat className="w-4 h-4" /> 重置打包清單</button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div className="flex p-1.5 bg-slate-200/50 rounded-3xl border border-slate-100">
+                                            <button onClick={() => setThreeMealMode('standard')} className={`flex-1 py-3 text-xs font-bold rounded-2xl transition-all ${threeMealMode === 'standard' ? 'bg-white text-teal-600' : 'text-slate-500'}`}>平日模式</button>
+                                            <button onClick={() => setThreeMealMode('gap')} className={`flex-1 py-3 text-xs font-bold rounded-2xl transition-all ${threeMealMode === 'gap' ? 'bg-orange-50 text-orange-600 shadow-sm' : 'text-slate-500'}`}>空窗期</button>
+                                        </div>
+                                        {getScheduleThreeMeals(threeMealMode).map(p => (
+                                            <div key={p.id} className="mb-6">
+                                                <div className="flex items-center gap-3 mb-3"><div className={`p-2.5 rounded-2xl ${p.color}`}>{p.icon}</div><div><h2 className="font-bold text-xl">{p.title}</h2><p className="text-sm text-slate-500">{p.subtitle}</p></div></div>
+                                                {p.items.map(it => <SupplementCard key={it.id} item={it} />)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'protein' && (
+                            <div className="animate-fade-in space-y-6">
+                                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                                    <div className="flex items-start gap-4 mb-5 pb-4 border-b border-amber-100">
+                                        <div className="p-3 bg-amber-100 rounded-2xl"><Coffee className="w-7 h-7 text-amber-900" /></div>
+                                        <div><h3 className="text-xl font-bold text-slate-800">果果能量－乳清蛋白</h3><div className="mt-2 text-base text-amber-900 bg-amber-100 px-3 py-1 rounded-xl font-bold flex items-center gap-2"><Clock className="w-4 h-4" />午餐後 2 小時</div></div>
+                                    </div>
+                                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 space-y-2">
+                                        <h4 className="font-bold text-amber-700 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> 重點叮嚀</h4>
+                                        <p className="text-sm text-amber-900/80 leading-relaxed">請花 20-30 分鐘慢慢喝完，一口氣灌下容易想吐。泡 350-400cc 水量加倍順便補水。</p>
+                                    </div>
+                                </div>
+                                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                                    <div className="flex items-start gap-4 mb-5 pb-4 border-b border-amber-100">
+                                        <div className="p-3 bg-amber-100 rounded-2xl"><Cookie className="w-7 h-7 text-amber-900" /></div>
+                                        <div><h3 className="text-xl font-bold text-slate-800">果果能量－蛋白威化餅</h3><div className="mt-2 text-base text-amber-900 bg-amber-100 px-3 py-1 rounded-xl font-bold flex items-center gap-2"><Clock className="w-4 h-4" />晚餐前 1.5 小時</div></div>
+                                    </div>
+                                    <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
+                                        <h4 className="font-bold text-rose-700 mb-2 flex items-center gap-2"><Ban className="w-4 h-4" />請勿食用時間</h4>
+                                        <p className="text-sm text-rose-900/80">睡前不要吃，MCT 油容易導致火燒心。正餐當下不要吃，蛋白質不足且會影響正餐胃口。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'alternatives' && (
+                            <div className="animate-fade-in space-y-4">
+                                {alternativesData.map((alt, i) => (
+                                    <div key={i} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <div className={`p-3 rounded-2xl ${alt.color}`}>{alt.icon}</div>
+                                            <h3 className="font-bold text-lg text-slate-700">{alt.category}</h3>
+                                        </div>
+                                        <div className="space-y-3 pl-1">
+                                            <div className="flex items-center justify-between text-sm border-b border-slate-50 pb-2">
+                                                 <span className="text-slate-400 font-medium">主要建議</span>
+                                                 <span className="font-bold text-slate-700">{alt.primary}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm">
+                                                 <span className="text-slate-400 font-medium">替代方案</span>
+                                                 <span className="font-bold text-teal-600">{alt.alt}</span>
+                                            </div>
+                                            <div className="bg-slate-50 p-3 rounded-xl text-xs text-slate-500 leading-relaxed font-medium mt-2">
+                                                {alt.note}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
-                )}
 
-                {/* PROTEIN SUPPLEMENT */}
-                {activeTab === 'protein' && (
-                    <div className="animate-fade-in space-y-6">
-                        
-                        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:shadow-md">
-                            <div className="flex items-start gap-4 mb-5 pb-4 border-b border-amber-100">
-                                <div className="p-3 bg-amber-100 rounded-2xl shrink-0">
-                                    <Coffee className="w-7 h-7 text-amber-900" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-slate-800 leading-tight">果果能量－乳清蛋白</h3>
-                                    <div className="mt-2 flex items-center gap-2 text-base text-amber-900 bg-amber-100 px-3 py-1 rounded-xl w-fit font-bold">
-                                        <Clock className="w-4 h-4" /> 最佳時間：午餐後 2 小時
+                    {/* MODALS */}
+                    {showResetModal && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setShowResetModal(false)} />
+                            <div className="bg-white rounded-[2rem] p-6 w-full max-w-xs relative z-10 shadow-2xl animate-fade-in">
+                                <div className="text-center">
+                                    <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500">
+                                        <Repeat className="w-6 h-6" />
                                     </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="text-base text-slate-600 bg-slate-50 p-4 rounded-2xl leading-relaxed">
-                                    <span className="font-bold text-slate-700 block mb-1">💡 推薦原因：</span>
-                                    取代手搖飲，且避開正餐吞藥時段，減少胃部負擔。
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <div className="flex-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                        <div className="flex items-center gap-1.5 mb-1.5 text-slate-400 font-bold text-sm uppercase tracking-wide">
-                                            <Sun className="w-3.5 h-3.5" /> 替代時機 1
-                                        </div>
-                                        <div className="text-base font-bold text-slate-700">早餐</div>
-                                        <div className="text-sm text-slate-500 mt-1">沒胃口吃固體食物時可直接喝。</div>
+                                    <h3 className="text-xl font-bold text-slate-800 mb-2">確定重置？</h3>
+                                    <p className="text-slate-500 text-sm mb-6 leading-relaxed">這將會清除今日所有的打勾紀錄，進度條將歸零。</p>
+                                    <div className="flex gap-3">
+                                        <button onClick={() => setShowResetModal(false)} className="flex-1 py-3 font-bold text-slate-500 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors">取消</button>
+                                        <button onClick={confirmReset} className="flex-1 py-3 font-bold text-white bg-rose-500 rounded-2xl shadow-lg shadow-rose-200 hover:bg-rose-600 transition-colors">確定清除</button>
                                     </div>
-                                    <div className="flex-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                        <div className="flex items-center gap-1.5 mb-1.5 text-slate-400 font-bold text-sm uppercase tracking-wide">
-                                            <Activity className="w-3.5 h-3.5" /> 替代時機 2
-                                        </div>
-                                        <div className="text-base font-bold text-slate-700">運動後</div>
-                                        <div className="text-sm text-slate-500 mt-1">30分鐘內喝，修復肌肉。</div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-                                    <h4 className="flex items-center gap-2 font-bold text-amber-700 mb-3 text-base">
-                                        <AlertTriangle className="w-4 h-4" /> 猛健樂 (Mounjaro) 重點叮嚀
-                                    </h4>
-                                    <ul className="space-y-2.5">
-                                        <li className="flex gap-3 text-sm text-amber-900/80 leading-relaxed">
-                                            <span className="bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded text-xs font-bold h-fit whitespace-nowrap">慢速飲用</span>
-                                            請花 20-30 分鐘 慢慢喝完，一口氣灌下容易吐。
-                                        </li>
-                                        <li className="flex gap-3 text-sm text-amber-900/80 leading-relaxed">
-                                            <span className="bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded text-xs font-bold h-fit whitespace-nowrap">水量加倍</span>
-                                            建議泡 350cc - 400cc，順便補水。
-                                        </li>
-                                        <li className="flex gap-3 text-sm text-amber-900/80 leading-relaxed">
-                                            <span className="bg-rose-200 text-rose-800 px-1.5 py-0.5 rounded text-xs font-bold h-fit whitespace-nowrap">睡前禁喝</span>
-                                            避免胃食道逆流。
-                                        </li>
-                                    </ul>
                                 </div>
                             </div>
                         </div>
+                    )}
 
-                        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:shadow-md">
-                            <div className="flex items-start gap-4 mb-5 pb-4 border-b border-amber-100">
-                                <div className="p-3 bg-amber-100 rounded-2xl shrink-0">
-                                    <Cookie className="w-7 h-7 text-amber-900" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-slate-800 leading-tight">果果能量－蛋白威化餅</h3>
-                                    <div className="mt-2 flex items-center gap-2 text-base text-amber-900 bg-amber-100 px-3 py-1 rounded-xl w-fit font-bold">
-                                        <Clock className="w-4 h-4" /> 最佳時間：晚餐前 1.5 小時
+                    {showPackingResetModal && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setShowPackingResetModal(false)} />
+                            <div className="bg-white rounded-[2rem] p-6 w-full max-w-xs relative z-10 shadow-2xl animate-fade-in">
+                                <div className="text-center">
+                                    <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500">
+                                        <Briefcase className="w-6 h-6" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-800 mb-2">重置打包清單？</h3>
+                                    <p className="text-slate-500 text-sm mb-6 leading-relaxed">所有的行李檢查狀態將會被清空。</p>
+                                    <div className="flex gap-3">
+                                        <button onClick={() => setShowPackingResetModal(false)} className="flex-1 py-3 font-bold text-slate-500 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors">取消</button>
+                                        <button onClick={confirmPackingReset} className="flex-1 py-3 font-bold text-white bg-rose-500 rounded-2xl shadow-lg shadow-rose-200 hover:bg-rose-600 transition-colors">確定清除</button>
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="space-y-4">
-                                <div className="text-base text-slate-600 bg-slate-50 p-4 rounded-2xl leading-relaxed">
-                                    <span className="font-bold text-slate-700 block mb-1">💡 推薦原因：</span>
-                                    低糖解饞，MCT 油幫助下午提神。
-                                </div>
-
-                                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex items-center gap-3">
-                                    <div className="p-2 bg-white rounded-xl shadow-sm text-slate-400">
-                                        <Activity className="w-4 h-4" />
-                                    </div>
-                                    <div className="text-sm text-slate-500">
-                                        <span className="font-bold text-slate-700 block mb-0.5">替代方案</span>
-                                        運動前 30-60 分鐘補充能量。
-                                    </div>
-                                </div>
-
-                                <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
-                                    <h4 className="flex items-center gap-2 font-bold text-rose-700 mb-2 text-base">
-                                        <Ban className="w-4 h-4" /> 請勿食用時間
-                                    </h4>
-                                    <div className="grid grid-cols-2 gap-3 mt-2">
-                                        <div className="bg-white/60 p-2 rounded-xl text-sm text-rose-900/80">
-                                            <span className="block font-bold mb-1">晚餐後/睡前</span>
-                                            MCT 油容易導致夜間火燒心。
-                                        </div>
-                                        <div className="bg-white/60 p-2 rounded-xl text-sm text-rose-900/80">
-                                            <span className="block font-bold mb-1">正餐當下</span>
-                                            會太飽吃不下正餐，且蛋白質不足。
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-                                    <h4 className="flex items-center gap-2 font-bold text-amber-700 mb-3 text-base">
-                                        <AlertTriangle className="w-4 h-4" /> 猛健樂 (Mounjaro) 重點叮嚀
-                                    </h4>
-                                    <ul className="space-y-2.5">
-                                        <li className="flex gap-3 text-sm text-amber-900/80 leading-relaxed">
-                                            <span className="bg-sky-200 text-sky-800 px-1.5 py-0.5 rounded text-xs font-bold h-fit whitespace-nowrap">務必配水</span>
-                                            餅乾較乾，請配 200-300cc 水 一起吃，避免卡喉或便秘。
-                                        </li>
-                                        <li className="flex gap-3 text-sm text-amber-900/80 leading-relaxed">
-                                            <span className="bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded text-xs font-bold h-fit whitespace-nowrap">少量測試</span>
-                                            若怕 MCT 油腹瀉，第一次先吃半支試試。
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
                         </div>
-                    </div>
-                )}
-
-                {/* ALTERNATIVES */}
-                {activeTab === 'alternatives' && (
-                    <div className="animate-fade-in space-y-4">
-                        <div className="bg-sky-50 text-sky-800 p-5 rounded-3xl border border-sky-100 mb-6 text-base flex gap-3 shadow-sm">
-                        <div className="bg-sky-100 p-1.5 rounded-full h-fit shrink-0">
-                            <Info className="w-4 h-4 text-sky-600" />
-                        </div>
-                        <p className="leading-relaxed opacity-90 font-medium">此清單提供當首選產品缺貨、或身體狀況改變時的替代方案。</p>
-                        </div>
-
-                        {alternativesData.map((alt, index) => (
-                        <div key={index} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-50">
-                                <div className={`p-2 rounded-2xl ${alt.color}`}>
-                                {alt.icon}
-                                </div>
-                                <h4 className="font-bold text-slate-800 text-xl tracking-wide">{alt.category}</h4>
-                            </div>
-                            
-                            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-base mb-4">
-                                <span className="text-xs font-black text-teal-600 bg-teal-50 px-2 py-1 rounded-md uppercase tracking-wider self-start mt-0.5 text-center">首選</span>
-                                <span className="font-bold text-slate-800">{alt.primary}</span>
-                                
-                                <span className="text-xs font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-md uppercase tracking-wider self-start mt-0.5 text-center">替代</span>
-                                <span className="font-medium text-slate-500">{alt.alt}</span>
-                            </div>
-                            
-                            <div className="text-sm text-slate-500 bg-slate-50 p-3 rounded-2xl leading-relaxed border border-slate-100 font-medium">
-                                <span className="font-bold text-amber-500 mr-1">💡 NOTE:</span> {alt.note}
-                            </div>
-                        </div>
-                        ))}
-                    </div>
-                )}
-
+                    )}
                 </div>
-
-                {/* MODALS */}
-                {showResetModal && (
-                    <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                        <div className="bg-white rounded-[2rem] p-6 max-w-xs w-full shadow-2xl transform scale-100 transition-all border border-slate-100">
-                            <div className="text-center mb-6">
-                                <div className="bg-rose-100 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Repeat className="w-7 h-7 text-rose-500" />
-                                </div>
-                                <h3 className="text-xl font-extrabold text-slate-800 mb-2 tracking-wide font-rounded">確定重置？</h3>
-                                <p className="text-slate-500 text-sm leading-relaxed font-medium">
-                                    這將會清除今日所有的攝取紀錄，此動作無法復原。
-                                </p>
-                            </div>
-                            <div className="flex gap-3">
-                                <button 
-                                    onClick={() => setShowResetModal(false)}
-                                    className="flex-1 py-3.5 rounded-2xl border-2 border-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-50 hover:border-slate-200 transition-all tracking-wide"
-                                >
-                                    取消
-                                </button>
-                                <button 
-                                    onClick={confirmReset}
-                                    className="flex-1 py-3.5 rounded-2xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-600 shadow-lg shadow-rose-200 transition-all tracking-wide"
-                                >
-                                    確認重置
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {showPackingResetModal && (
-                    <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                        <div className="bg-white rounded-[2rem] p-6 max-w-xs w-full shadow-2xl transform scale-100 transition-all border border-slate-100">
-                            <div className="text-center mb-6">
-                                <div className="bg-rose-100 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Repeat className="w-7 h-7 text-rose-500" />
-                                </div>
-                                <h3 className="text-xl font-extrabold text-slate-800 mb-2 tracking-wide font-rounded">確定重置打包清單？</h3>
-                                <p className="text-slate-500 text-sm leading-relaxed font-medium">
-                                    這將會清除所有打包勾選紀錄，無法復原。
-                                </p>
-                            </div>
-                            <div className="flex gap-3">
-                                <button 
-                                    onClick={() => setShowPackingResetModal(false)}
-                                    className="flex-1 py-3.5 rounded-2xl border-2 border-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-50 hover:border-slate-200 transition-all tracking-wide"
-                                >
-                                    取消
-                                </button>
-                                <button 
-                                    onClick={confirmPackingReset}
-                                    className="flex-1 py-3.5 rounded-2xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-600 shadow-lg shadow-rose-200 transition-all tracking-wide"
-                                >
-                                    確認重置
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
             );
         };
 
