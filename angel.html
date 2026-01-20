@@ -50,6 +50,18 @@
         .animate-fade-in {
             animation: fadeIn 0.3s ease-out forwards;
         }
+
+        /* 用戶自定義樣式：出團版飛機圖示 */
+        .icon-travel {
+            color: #334155; 
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        /* 懸停效果：讓飛機看起來像在起飛 */
+        .icon-travel:hover {
+            color: #334155; 
+            transform: translate(2px, -2px); 
+        }
     </style>
 </head>
 <body>
@@ -59,7 +71,6 @@
         const { useState, useEffect, useCallback, useMemo } = React;
 
         // --- ICON COMPONENTS (SVG) ---
-        // IconBase 預設為 fill="none" (空心) 和 stroke="currentColor" (線條)
         const IconBase = React.memo(({ children, className, ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
         ));
@@ -71,16 +82,10 @@
         const Coffee = (p) => <IconBase {...p}><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/></IconBase>;
         
         // 更新為：標準飛機、機頭朝上、空心線條
-        // 使用 IconBase 的預設 fill="none" 來達到空心效果
         const Plane = (p) => <IconBase {...p}>
-            <path d="M12 22s-2-4.5-2-6c0-6 2-6 2-14 0 8 2 8 2 14 0 1.5-2 6-2 6Z" /> {/* 機身與尾部輪廓 */}
-            <path d="M2 12h20" /> {/* 機翼示意線條，或使用更詳細的輪廓 */}
-            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /> {/* 完整空心輪廓 */}
-        </IconBase>;
-        
-        // 修正 Plane 組件，確保只有一個乾淨的空心路徑
-        const PlaneOutline = (p) => <IconBase {...p}>
-             <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+            <path d="M12 22s-2-4.5-2-6c0-6 2-6 2-14 0 8 2 8 2 14 0 1.5-2 6-2 6Z" />
+            <path d="M2 12h20" />
+            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
         </IconBase>;
 
         const Milk = (p) => <IconBase {...p}><path d="M8 2h8"/><path d="M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2"/><path d="M7 15a6.472 6.472 0 0 1 5 0 6.47 6.47 0 0 0 5 0"/></IconBase>;
@@ -120,6 +125,8 @@
             { id: 'p_cartilage', name: '10. BioSunn Haibrusk (軟骨)', baseDose: 2, unit: '顆' },
             { id: 'p_magnesium', name: '11. Mivolis Magnesium 500 (鎂)', baseDose: 1, unit: '錠' },
             { id: 'p_calcium', name: '12. Mivolis Calcium 600 (鈣)', baseDose: 1, unit: '錠' },
+            { id: 'p_enzyme', name: '13. MDC 酵素×酵母', baseDose: 2, unit: '粒' },
+            { id: 'p_gaba', name: '14. DHC GABA', baseDose: 1, unit: '粒' },
         ];
 
         const scheduleDataTwoMeals = [
@@ -182,13 +189,17 @@
                 { 
                   id: 't1', title: '1. 起床空腹', subtitle: '防皮鬆關鍵', 
                   icon: <Sunrise className="w-7 h-7 text-orange-600" />, color: 'bg-orange-100',
-                  items: [{ id: 'tm_neocell', name: 'NeoCell Super Collagen', dose: '2 錠', desc: '空腹吸收最佳', type: 'pill' }] 
+                  items: [
+                      { id: 'tm_neocell', name: 'NeoCell Super Collagen', dose: '2 錠', desc: '空腹吸收最佳', type: 'pill' },
+                      { id: 'tm_nmn', name: 'bard NMN 30000', dose: '1 顆', desc: '喚醒細胞，提供一日體力', type: 'pill' }
+                  ] 
                 },
                 { 
                   id: 't2', title: '2. 早餐', subtitle: '預防脹氣', 
                   icon: <Coffee className="w-7 h-7 text-amber-600" />, color: 'bg-amber-100',
                   items: [
-                      { id: 'tm_profaes', name: 'ProFaes4 益生菌', dose: '1 顆', desc: '預防整天脹氣', type: 'pill' },
+                      { id: 'tm_profaes', name: 'ProFaes4 益生菌', dose: '1 顆', desc: '預防整天脹氣，隨餐第一口吃', type: 'pill' },
+                      { id: 'tm_bkomplex', name: 'Mivolis B-Komplex (B群)', dose: '1 顆', desc: '提供白天能量，避免太晚吃', type: 'pill' },
                       isGap ? { id: 'tm_mct1', name: "Nature's Truth MCT Oil", dose: '1 顆', desc: '★ 空窗期：增加飽足感', type: 'oil', highlight: true } : null
                   ].filter(Boolean) 
                 },
@@ -196,30 +207,33 @@
                   id: 't3', title: '3. 午餐', subtitle: '油脂消化', 
                   icon: <Sun className="w-7 h-7 text-yellow-600" />, color: 'bg-yellow-100',
                   items: [
-                      { id: 'tm_seal', name: 'BioSunn Selolje (海豹油)', dose: '1 顆', desc: '中午消化最好', type: 'oil' },
+                      { id: 'tm_beauty', name: 'Mivolis 美容配方', dose: '1 錠', desc: '含鋅與Q10，隨餐吃不傷胃', type: 'pill' },
+                      { id: 'tm_seal', name: 'BioSunn Selolje (海豹油)', dose: '1 顆', desc: '中午消化最好，避免逆流', type: 'oil' },
+                      { id: 'tm_blueberry', name: 'Nordmea Blåbær (藍莓)', dose: '1 顆', desc: '午後補充，舒緩眼睛疲勞', type: 'pill' },
                       isGap ? { id: 'tm_mct2', name: "Nature's Truth MCT Oil", dose: '1 顆', desc: '★ 延續飽足感', type: 'oil', highlight: true } : null
                   ].filter(Boolean) 
                 },
                 {
-                  id: 't4', title: '4. 晚餐', subtitle: '修復與抗氧化',
+                  id: 't4', title: '4. 晚餐', subtitle: '消化修復',
                   icon: <Utensils className="w-7 h-7 text-sky-600" />, color: 'bg-sky-100',
                   prePhaseEvents: [
                     { title: '快樂下午茶－果果能量【乳清蛋白飲】（午餐後２小時）', note: '建議沖泡 350cc - 400cc 的水／花 20-30 分鐘 慢慢喝完', icon: <Coffee className="w-5 h-5 text-orange-600" />, colorTheme: 'orange' },
                     { title: '飢餓法寶－果果能量【蛋白威化餅】（晚餐前1.5小時）', note: '建議搭配 350cc - 400cc 的水／花 20-30 分鐘 慢慢吃完', icon: <Cookie className="w-5 h-5 text-orange-900" />, colorTheme: 'chestnut' }
                   ],
                   items: [
-                      { id: 'tm_vitc', name: 'Mivolis Vitamin C', dose: '1 顆', desc: '幫助軟骨與膠原蛋白合成', type: 'pill' },
+                      { id: 'tm_enzyme', name: 'MDC 酵素×酵母', dose: '2 粒', desc: '幫助分解食物，加速胃排空', type: 'pill' },
                       { id: 'tm_cartilage', name: 'BioSunn Haibrusk (鯊魚軟骨)', dose: '2 顆', desc: '夜間修復關節軟骨', type: 'pill' }
                   ]
                 },
                 {
-                  id: 't5', title: '5. 睡前 (⏰30-60分鐘)', subtitle: '解決便秘・放鬆助眠',
+                  id: 't5', title: '5. 睡前 (⏰30-60分鐘)', subtitle: '深層睡眠・排便',
                   icon: <Bed className="w-7 h-7 text-indigo-600" />, color: 'bg-indigo-100',
                   prePhaseEvents: [{ title: '💡 黃金時間：晚餐至睡前至少間隔 2 小時', colorTheme: 'amber' }],
                   items: [
-                      { id: 'tm_magnesium', name: 'Mivolis Magnesium 500 (鎂)', dose: '1 錠', desc: '關鍵！解決便秘、放鬆肌肉、助眠', type: 'pill' },
-                      { id: 'tm_calcium', name: 'Mivolis Calcium 600 (鈣)', dose: '1 錠', desc: '補鈣，與鎂一起穩定神經', type: 'pill' },
-                      { id: 'tm_neocell_night', name: 'NeoCell Super Collagen', dose: '1 錠', desc: '分次吸收，夜間修復', type: 'pill' }
+                      { id: 'tm_neocell_night', name: 'NeoCell Super Collagen', dose: '1 錠', desc: '補足全日第3錠，持續夜間修復', type: 'pill' },
+                      { id: 'tm_magnesium', name: 'Mivolis Magnesium 500 (鎂)', dose: '1 錠', desc: '關鍵！放鬆肌肉、解便秘', type: 'pill' },
+                      { id: 'tm_calcium', name: 'Mivolis Calcium 600 (鈣)', dose: '1 錠', desc: '穩定神經', type: 'pill' },
+                      { id: 'tm_gaba', name: 'DHC GABA', dose: '1 粒', desc: '大腦放鬆，輔助深層睡眠', type: 'pill' }
                   ]
                 }
             ];
@@ -333,7 +347,7 @@
                                             className={`py-1.5 text-xs sm:text-sm font-bold rounded-2xl transition-all duration-200 flex flex-col items-center justify-center px-1
                                             ${activeTab === tab ? 'bg-white text-teal-600 shadow-sm ring-1 ring-black/5 scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}>
                                             {tab === 'two-meals' && <Coffee className="w-4 h-4 mb-0.5" />}
-                                            {tab === 'three-meals' && <PlaneOutline className="w-4 h-4 mb-0.5" />}
+                                            {tab === 'three-meals' && <Plane className="w-4 h-4 mb-0.5 icon-travel" />}
                                             {tab === 'protein' && <Milk className="w-4 h-4 mb-0.5" />}
                                             {tab === 'alternatives' && <Pill className="w-4 h-4 mb-0.5" />}
                                             <span className="text-center leading-tight transform scale-90 sm:scale-100 origin-center">
